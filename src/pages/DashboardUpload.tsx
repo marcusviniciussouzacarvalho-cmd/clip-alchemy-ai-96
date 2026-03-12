@@ -31,8 +31,13 @@ const DashboardUpload = () => {
   const navigate = useNavigate();
 
   const handleFile = useCallback((f: File) => {
+    const validation = validateVideoFile(f);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
     setFile(f);
-    if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ""));
+    if (!title) setTitle(sanitizeFilename(f.name.replace(/\.[^/.]+$/, "")));
   }, [title]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
