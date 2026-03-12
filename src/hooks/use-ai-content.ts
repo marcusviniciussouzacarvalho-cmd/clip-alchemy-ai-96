@@ -72,6 +72,34 @@ export function useThumbnailText() {
   });
 }
 
+export function useAdvancedVirality() {
+  return useMutation({
+    mutationFn: (params: { title: string; duration_seconds: number; transcript?: string }) =>
+      callAI("advanced_virality", params),
+  });
+}
+
+export function useDetectHook() {
+  return useMutation({
+    mutationFn: (params: { transcript: string }) =>
+      callAI("detect_hook", params),
+  });
+}
+
+export function useRetentionCurve() {
+  return useMutation({
+    mutationFn: (params: { transcript: string; duration_seconds: number }) =>
+      callAI("retention_curve", params),
+  });
+}
+
+export function useCompareClips() {
+  return useMutation({
+    mutationFn: (params: { clips: Array<{ title: string; duration: number; score: number; transcript?: string }> }) =>
+      callAI("compare_clips", params),
+  });
+}
+
 // Viral hooks library (static data, no AI needed)
 export const VIRAL_HOOKS = [
   { id: 1, text: "Ninguém fala sobre isso...", category: "curiosidade", impact: "alto" },

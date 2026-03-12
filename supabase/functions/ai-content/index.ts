@@ -103,6 +103,53 @@ Transcrição: "${params.transcript || ''}"
 Responda APENAS com um JSON array de objetos: "text" (string - máximo 5 palavras), "style" (string - "bold" | "question" | "shock"), "color_suggestion" (string - hex color).`;
         break;
       }
+      case "advanced_virality": {
+        systemPrompt = "Você é um analista de conteúdo viral com expertise em métricas de engajamento e retenção.";
+        userPrompt = `Analise este clip em profundidade e forneça uma pontuação avançada de viralidade:
+Título: "${params.title}"
+Duração: ${params.duration_seconds}s
+Transcrição: "${params.transcript || ''}"
+
+Avalie cada critério de 0 a 100:
+1. Força do gancho (primeiros 3 segundos)
+2. Intensidade emocional
+3. Clareza da mensagem
+4. Velocidade/ritmo da fala
+5. Potencial de retenção
+6. Originalidade do conteúdo
+
+Responda APENAS com um JSON objeto: "overall_score" (number), "criteria" (array de objetos com "name" string, "score" number, "feedback" string curto), "verdict" (string - avaliação geral em 1 frase), "tier" (string - "S" | "A" | "B" | "C" | "D").`;
+        break;
+      }
+      case "detect_hook": {
+        systemPrompt = "Você é um especialista em hooks virais para vídeos curtos.";
+        userPrompt = `Analise o início desta transcrição e identifique o hook (gancho) do vídeo:
+"${params.transcript}"
+
+Identifique: tipo de hook (pergunta, afirmação forte, curiosidade, promessa de valor, choque), os primeiros segundos que capturam atenção, e sugira melhorias.
+
+Responda APENAS com um JSON objeto: "type" (string), "text" (string - o texto do hook detectado), "duration_seconds" (number - duração estimada do hook), "strength" (number 1-100), "improvement" (string - sugestão de melhoria), "alternative_hooks" (string[] - 3 alternativas melhores).`;
+        break;
+      }
+      case "retention_curve": {
+        systemPrompt = "Você é um analista de retenção de audiência para vídeos curtos.";
+        userPrompt = `Analise esta transcrição e gere uma curva de retenção estimada para o vídeo (duração: ${params.duration_seconds}s):
+"${params.transcript}"
+
+Divida o vídeo em 10 segmentos iguais e estime a porcentagem de retenção em cada ponto.
+Identifique pontos de queda e picos de interesse.
+
+Responda APENAS com um JSON objeto: "points" (array de objetos com "time_percent" number 0-100, "retention" number 0-100, "label" string curto opcional), "drop_points" (array de objetos com "time_percent" number, "reason" string), "peak_points" (array de objetos com "time_percent" number, "reason" string), "average_retention" (number).`;
+        break;
+      }
+      case "compare_clips": {
+        systemPrompt = "Você é um consultor de conteúdo viral. Compare clips e recomende o melhor.";
+        userPrompt = `Compare estes clips e determine qual tem maior potencial viral:
+${params.clips?.map((c: any, i: number) => `Clip ${i + 1}: Título="${c.title}", Duração=${c.duration}s, Score=${c.score}, Transcrição="${c.transcript || 'N/A'}"`).join('\n')}
+
+Responda APENAS com um JSON objeto: "winner_index" (number - índice do melhor clip, começando em 0), "reason" (string), "rankings" (array de objetos com "index" number, "strengths" string[], "weaknesses" string[], "recommendation" string).`;
+        break;
+      }
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400,
