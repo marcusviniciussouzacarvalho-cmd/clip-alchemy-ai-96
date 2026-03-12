@@ -157,15 +157,18 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         )}
 
         {/* Breadcrumb */}
-        <div className="hidden md:flex items-center gap-1 px-8 pt-6 text-xs text-muted-foreground">
-          {pathSegments.map((seg, i) => (
-            <span key={seg} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight size={12} />}
-              <span className={i === pathSegments.length - 1 ? "text-foreground font-medium" : ""}>
-                {breadcrumbLabels[seg] || seg}
+        <div className="hidden md:flex items-center justify-between px-8 pt-6">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            {pathSegments.map((seg, i) => (
+              <span key={seg} className="flex items-center gap-1">
+                {i > 0 && <ChevronRight size={12} />}
+                <span className={i === pathSegments.length - 1 ? "text-foreground font-medium" : ""}>
+                  {breadcrumbLabels[seg] || seg}
+                </span>
               </span>
-            </span>
-          ))}
+            ))}
+          </div>
+          <NotificationBell />
         </div>
 
         <div className="p-5 md:px-8 md:py-6">
