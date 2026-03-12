@@ -17,7 +17,7 @@ const Login = () => {
             <ArrowLeft size={16} /> Voltar
           </Link>
 
-          <h1 className="text-2xl font-bold mb-2">Entrar</h1>
+          <h1 className="text-2xl font-extrabold mb-2">Entrar</h1>
           <p className="text-sm text-muted-foreground mb-8">Acesse sua conta VenusClip</p>
 
           <div className="space-y-4">
@@ -29,7 +29,9 @@ const Login = () => {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" />
             </div>
-            <Button className="w-full" variant="default">Entrar</Button>
+            <Button className="w-full" variant="default" asChild>
+              <Link to="/dashboard">Entrar</Link>
+            </Button>
           </div>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
@@ -39,10 +41,10 @@ const Login = () => {
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 bg-foreground items-center justify-center">
-        <div className="text-background text-center px-12">
-          <div className="font-display text-3xl font-bold mb-4">VENUSCLIP</div>
-          <p className="text-background/60">Transforme vídeos longos em clips virais com IA</p>
+      <div className="hidden lg:flex flex-1 bg-card border-l border-border items-center justify-center">
+        <div className="text-center px-12">
+          <div className="font-display text-3xl font-extrabold mb-4">VENUSCLIP</div>
+          <p className="text-muted-foreground">Transforme vídeos longos em clips virais com IA</p>
         </div>
       </div>
     </div>
