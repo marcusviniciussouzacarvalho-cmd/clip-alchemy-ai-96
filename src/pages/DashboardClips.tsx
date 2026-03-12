@@ -175,6 +175,11 @@ const DashboardClips = () => {
                       viralityScore={clip.virality_score || 0}
                       transcript={clip.transcript_text || undefined}
                     />
+                    <AdvancedVirality
+                      title={clip.title}
+                      durationSeconds={clip.duration_seconds || 0}
+                      transcript={clip.transcript_text || undefined}
+                    />
                     <ViralTitles clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
                   </div>
                 )}
