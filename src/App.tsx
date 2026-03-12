@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoute from "@/components/AdminRoute";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -74,7 +75,7 @@ const App = () => (
             <Route path="/dashboard/credits" element={<ProtectedRoute><DashboardCredits /></ProtectedRoute>} />
             <Route path="/dashboard/library" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/brand-kit" element={<ProtectedRoute><DashboardBrandKit /></ProtectedRoute>} />
-            <Route path="/dashboard/admin" element={<ProtectedRoute><DashboardAdmin /></ProtectedRoute>} />
+            <Route path="/dashboard/admin" element={<AdminRoute><DashboardAdmin /></AdminRoute>} />
             <Route path="/dashboard/script" element={<ProtectedRoute><DashboardScriptGenerator /></ProtectedRoute>} />
             <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
             <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />
