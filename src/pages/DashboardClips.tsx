@@ -151,7 +151,25 @@ const DashboardClips = () => {
                   <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(clip.id)}>
                     <Trash2 size={12} />
                   </Button>
+                  <Button
+                    variant="outline" size="sm" className="h-8 w-8 p-0"
+                    onClick={() => setExpandedClip(expandedClip === clip.id ? null : clip.id)}
+                  >
+                    {expandedClip === clip.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </Button>
                 </div>
+
+                {expandedClip === clip.id && (
+                  <div className="pt-2 space-y-3 border-t border-border mt-2">
+                    <ClipSuggestions
+                      title={clip.title}
+                      durationSeconds={clip.duration_seconds || 0}
+                      viralityScore={clip.virality_score || 0}
+                      transcript={clip.transcript_text || undefined}
+                    />
+                    <ViralTitles clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

@@ -71,6 +71,9 @@ const App = () => (
             <Route path="/dashboard/library" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/brand-kit" element={<ProtectedRoute><DashboardBrandKit /></ProtectedRoute>} />
             <Route path="/dashboard/admin" element={<ProtectedRoute><DashboardAdmin /></ProtectedRoute>} />
+            <Route path="/dashboard/script" element={<ProtectedRoute><DashboardScriptGenerator /></ProtectedRoute>} />
+            <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
+            <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />
             <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/pricing" element={<PricingPage />} />
