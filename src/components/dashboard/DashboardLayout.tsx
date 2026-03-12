@@ -34,6 +34,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const breadcrumbLabels: Record<string, string> = {
     dashboard: "Dashboard",
     upload: "Upload",
+    import: "Importar",
     library: "Biblioteca",
     clips: "Clips",
     editor: "Editor",
