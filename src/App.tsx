@@ -28,6 +28,8 @@ const DashboardTrends = lazy(() => import("./pages/DashboardTrends"));
 const DashboardHooks = lazy(() => import("./pages/DashboardHooks"));
 const DashboardNotifications = lazy(() => import("./pages/DashboardNotifications"));
 const DashboardSettings = lazy(() => import("./pages/DashboardSettings"));
+const DashboardSocialTools = lazy(() => import("./pages/DashboardSocialTools"));
+const DashboardIdeas = lazy(() => import("./pages/DashboardIdeas"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -79,6 +81,8 @@ const App = () => (
             <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/notifications" element={<ProtectedRoute><DashboardNotifications /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
+            <Route path="/dashboard/social-tools" element={<ProtectedRoute><DashboardSocialTools /></ProtectedRoute>} />
+            <Route path="/dashboard/ideas" element={<ProtectedRoute><DashboardIdeas /></ProtectedRoute>} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/contact" element={<Contact />} />

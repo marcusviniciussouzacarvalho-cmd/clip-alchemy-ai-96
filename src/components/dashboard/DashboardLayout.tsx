@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor } from "lucide-react";
+import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor, Hash, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,8 @@ const navItems = [
   { icon: PenTool, label: "Roteiro", href: "/dashboard/script" },
   { icon: TrendingUp, label: "Tendências", href: "/dashboard/trends" },
   { icon: Anchor, label: "Hooks", href: "/dashboard/hooks" },
+  { icon: Hash, label: "Social Tools", href: "/dashboard/social-tools" },
+  { icon: Lightbulb, label: "Ideias", href: "/dashboard/ideas" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: CreditCard, label: "Créditos", href: "/dashboard/credits" },
   { icon: Palette, label: "Brand Kit", href: "/dashboard/brand-kit" },
@@ -58,6 +60,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     settings: "Configurações",
     notifications: "Notificações",
     admin: "Admin",
+    "social-tools": "Social Tools",
+    ideas: "Ideias",
   };
 
   return (
