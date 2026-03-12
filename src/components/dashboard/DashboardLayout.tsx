@@ -30,6 +30,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: isAdmin } = useIsAdmin();
 
   // Activate realtime subscriptions
   useRealtimeJobs();
