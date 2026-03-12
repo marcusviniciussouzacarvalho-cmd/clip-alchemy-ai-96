@@ -54,6 +54,7 @@ const DashboardClips = () => {
   const { data: clips, isLoading } = useClips();
   const toggleFav = useToggleFavorite();
   const deleteClip = useDeleteClip();
+  const [expandedClip, setExpandedClip] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
     deleteClip.mutate(id, {
