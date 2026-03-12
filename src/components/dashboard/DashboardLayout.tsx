@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Upload, label: "Upload", href: "/dashboard/upload" },
+  { icon: Link2, label: "Importar", href: "/dashboard/import" },
   { icon: FolderOpen, label: "Biblioteca", href: "/dashboard/library" },
   { icon: Scissors, label: "Clips", href: "/dashboard/clips" },
   { icon: Video, label: "Editor", href: "/dashboard/editor" },
@@ -33,6 +34,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const breadcrumbLabels: Record<string, string> = {
     dashboard: "Dashboard",
     upload: "Upload",
+    import: "Importar",
     library: "Biblioteca",
     clips: "Clips",
     editor: "Editor",

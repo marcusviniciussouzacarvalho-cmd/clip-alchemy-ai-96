@@ -2,3 +2,6 @@ project_id = "bgaqderjilehqcxezybu"
 
 [functions.process-video]
 verify_jwt = false
+
+[functions.import-youtube]
+verify_jwt = false

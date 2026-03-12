@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Film, Sparkles, Subtitles, Search, Loader2 } from "lucide-react";
+import { Upload, Film, Sparkles, Subtitles, Search, Loader2, AlertCircle } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useUploadVideo, useProcessVideo } from "@/hooks/use-pipeline";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { validateVideoFile, sanitizeFilename } from "@/lib/upload-validation";
 
 const DashboardUpload = () => {
   const [dragging, setDragging] = useState(false);
@@ -29,8 +30,13 @@ const DashboardUpload = () => {
   const navigate = useNavigate();
 
   const handleFile = useCallback((f: File) => {
+    const validation = validateVideoFile(f);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
     setFile(f);
-    if (!title) setTitle(f.name.replace(/\.[^/.]+$/, ""));
+    if (!title) setTitle(sanitizeFilename(f.name.replace(/\.[^/.]+$/, "")));
   }, [title]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
