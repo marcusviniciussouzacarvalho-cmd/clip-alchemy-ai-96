@@ -28,6 +28,8 @@ const DashboardTrends = lazy(() => import("./pages/DashboardTrends"));
 const DashboardHooks = lazy(() => import("./pages/DashboardHooks"));
 const DashboardNotifications = lazy(() => import("./pages/DashboardNotifications"));
 const DashboardSettings = lazy(() => import("./pages/DashboardSettings"));
+const DashboardSocialTools = lazy(() => import("./pages/DashboardSocialTools"));
+const DashboardIdeas = lazy(() => import("./pages/DashboardIdeas"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Contact = lazy(() => import("./pages/Contact"));
