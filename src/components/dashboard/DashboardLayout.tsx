@@ -60,6 +60,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     settings: "Configurações",
     notifications: "Notificações",
     admin: "Admin",
+    "social-tools": "Social Tools",
+    ideas: "Ideias",
   };
 
   return (
