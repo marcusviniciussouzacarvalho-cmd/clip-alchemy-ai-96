@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ViralTitles } from "@/components/ai/ViralTitles";
 import { ClipSuggestions } from "@/components/ai/ClipSuggestions";
+import { AdvancedVirality } from "@/components/ai/AdvancedVirality";
+import { ClipComparison } from "@/components/ai/ClipComparison";
 import { useState } from "react";
 
 const ScoreBar = ({ score }: { score: number }) => {
