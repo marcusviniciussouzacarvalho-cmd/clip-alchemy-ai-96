@@ -9,7 +9,6 @@ import { useUploadVideo, useProcessVideo } from "@/hooks/use-pipeline";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { validateVideoFile, sanitizeFilename } from "@/lib/upload-validation";
-import { useNavigate } from "react-router-dom";
 
 const DashboardUpload = () => {
   const [dragging, setDragging] = useState(false);
