@@ -108,7 +108,13 @@ const DashboardClips = () => {
           </Button>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="space-y-4">
+          {/* Clip Comparison tool */}
+          {clips && clips.length >= 2 && (
+            <ClipComparison clips={clips} />
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {clips.map((clip, i) => (
             <motion.div
               key={clip.id}
