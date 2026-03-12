@@ -8,12 +8,12 @@ export function useIsAdmin() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
       const { data, error } = await supabase
-        .from("user_roles" as any)
+        .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .eq("role", "admin");
       if (error) return false;
-      return (data as any[])?.length > 0;
+      return (data?.length ?? 0) > 0;
     },
   });
 }

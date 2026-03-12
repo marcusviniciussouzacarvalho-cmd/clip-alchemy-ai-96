@@ -38,6 +38,13 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// Admin pages
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminVideos = lazy(() => import("./pages/admin/AdminVideos"));
+const AdminJobs = lazy(() => import("./pages/admin/AdminJobs"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
     <Loader2 size={28} className="animate-spin text-muted-foreground" />
@@ -47,8 +54,8 @@ const PageLoader = () => (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 2, // 2 min cache
-      gcTime: 1000 * 60 * 10, // 10 min garbage collection
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
       refetchOnWindowFocus: false,
       retry: 1,
     },
@@ -76,6 +83,11 @@ const App = () => (
             <Route path="/dashboard/library" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/brand-kit" element={<ProtectedRoute><DashboardBrandKit /></ProtectedRoute>} />
             <Route path="/dashboard/admin" element={<AdminRoute><DashboardAdmin /></AdminRoute>} />
+            <Route path="/dashboard/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+            <Route path="/dashboard/admin/videos" element={<AdminRoute><AdminVideos /></AdminRoute>} />
+            <Route path="/dashboard/admin/jobs" element={<AdminRoute><AdminJobs /></AdminRoute>} />
+            <Route path="/dashboard/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+            <Route path="/dashboard/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
             <Route path="/dashboard/script" element={<ProtectedRoute><DashboardScriptGenerator /></ProtectedRoute>} />
             <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
             <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />
