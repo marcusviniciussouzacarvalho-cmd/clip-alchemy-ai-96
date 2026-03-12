@@ -101,7 +101,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             <Link
               to="/dashboard/admin"
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
-                location.pathname === "/dashboard/admin"
+                location.pathname.startsWith("/dashboard/admin")
                   ? "bg-foreground text-background font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
               }`}
