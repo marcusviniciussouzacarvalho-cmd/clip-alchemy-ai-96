@@ -10,6 +10,7 @@ import { ViralMoments } from "@/components/ai/ViralMoments";
 import { DerivedContent } from "@/components/ai/DerivedContent";
 import { RetentionChart } from "@/components/ai/RetentionChart";
 import { HookDetector } from "@/components/ai/HookDetector";
+import { ThumbnailGenerator } from "@/components/ai/ThumbnailGenerator";
 
 const DashboardEditor = () => {
   const [playing, setPlaying] = useState(false);
@@ -183,6 +184,9 @@ const DashboardEditor = () => {
           </div>
 
           <Button className="w-full" size="sm">Salvar alterações</Button>
+
+          {/* Thumbnail Generator */}
+          <ThumbnailGenerator clipTitle="Clip de exemplo" transcript="Exemplo de transcrição do vídeo." />
 
           {/* AI Panels */}
           <HookDetector transcript="Exemplo de transcrição do vídeo para detectar o hook." />

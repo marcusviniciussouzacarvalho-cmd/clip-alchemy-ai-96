@@ -9,6 +9,7 @@ import { ViralTitles } from "@/components/ai/ViralTitles";
 import { ClipSuggestions } from "@/components/ai/ClipSuggestions";
 import { AdvancedVirality } from "@/components/ai/AdvancedVirality";
 import { ClipComparison } from "@/components/ai/ClipComparison";
+import { ThumbnailGenerator } from "@/components/ai/ThumbnailGenerator";
 import { useState } from "react";
 
 const ScoreBar = ({ score }: { score: number }) => {
@@ -181,6 +182,7 @@ const DashboardClips = () => {
                       transcript={clip.transcript_text || undefined}
                     />
                     <ViralTitles clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
+                    <ThumbnailGenerator clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
                   </div>
                 )}
               </div>
