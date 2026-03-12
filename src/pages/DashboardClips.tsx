@@ -1,20 +1,27 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Scissors, Download, RefreshCw, Play, BarChart3, Heart, Trash2, Loader2 } from "lucide-react";
+import { Scissors, Download, Play, Heart, Trash2, Loader2, BarChart3, Clock } from "lucide-react";
 import { useClips, useToggleFavorite, useDeleteClip } from "@/hooks/use-pipeline";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const ScoreBar = ({ score }: { score: number }) => (
-  <div className="flex items-center gap-2">
-    <div className="flex-1 h-1.5 rounded-full bg-accent overflow-hidden">
-      <div
-        className={`h-full rounded-full transition-all ${score >= 85 ? 'bg-emerald-400' : score >= 70 ? 'bg-amber-400' : 'bg-destructive'}`}
-        style={{ width: `${score}%` }}
-      />
+const ScoreBar = ({ score }: { score: number }) => {
+  const color = score >= 85 ? 'bg-emerald-400' : score >= 70 ? 'bg-amber-400' : 'bg-destructive';
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1 rounded-full bg-accent overflow-hidden">
+        <motion.div
+          className={`h-full rounded-full ${color}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+      <span className="text-[11px] font-bold tabular-nums w-7 text-right">{score}</span>
     </div>
-    <span className="text-xs font-bold w-8">{score}</span>
-  </div>
-);
+  );
+};
 
 const ViralityDetails = ({ details }: { details: any }) => {
   if (!details) return null;
@@ -26,14 +33,14 @@ const ViralityDetails = ({ details }: { details: any }) => {
   ];
 
   return (
-    <div className="space-y-1.5 mt-2">
+    <div className="space-y-1 mt-2">
       {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground w-14">{item.label}</span>
-          <div className="flex-1 h-1 rounded-full bg-accent overflow-hidden">
-            <div className="h-full rounded-full bg-foreground/60" style={{ width: `${item.value}%` }} />
+        <div key={item.label} className="flex items-center gap-1.5 text-[11px]">
+          <span className="text-muted-foreground w-12">{item.label}</span>
+          <div className="flex-1 h-0.5 rounded-full bg-accent overflow-hidden">
+            <div className="h-full rounded-full bg-foreground/40" style={{ width: `${item.value}%` }} />
           </div>
-          <span className="w-6 text-right">{item.value}</span>
+          <span className="w-5 text-right tabular-nums text-muted-foreground">{item.value}</span>
         </div>
       ))}
     </div>
@@ -69,59 +76,80 @@ const DashboardClips = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={32} className="animate-spin text-muted-foreground" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="venus-card overflow-hidden">
+              <Skeleton className="aspect-video w-full" />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : !clips || clips.length === 0 ? (
-        <div className="venus-card p-12 text-center">
-          <Scissors size={40} className="mx-auto mb-4 text-muted-foreground" />
-          <h3 className="font-bold text-lg mb-2">Nenhum clip gerado</h3>
-          <p className="text-sm text-muted-foreground mb-4">Faça upload de um vídeo para gerar clips automaticamente</p>
-          <Button variant="outline" asChild>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="venus-card p-12 text-center"
+        >
+          <Scissors size={36} className="mx-auto mb-4 text-muted-foreground/30" />
+          <h3 className="font-bold text-lg mb-1">Nenhum clip gerado</h3>
+          <p className="text-sm text-muted-foreground mb-5">Faça upload de um vídeo para gerar clips automaticamente</p>
+          <Button variant="outline" size="sm" asChild>
             <a href="/dashboard/upload">Upload de vídeo</a>
           </Button>
-        </div>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {clips.map((clip) => (
-            <div key={clip.id} className="venus-card overflow-hidden group">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {clips.map((clip, i) => (
+            <motion.div
+              key={clip.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              className="venus-card overflow-hidden group"
+            >
               <div className="aspect-video bg-accent flex items-center justify-center relative">
-                <Play size={32} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                <div className="absolute top-2 right-2">
-                  <button
-                    onClick={() => toggleFav.mutate({ clipId: clip.id, isFavorite: !clip.is_favorite })}
-                    className="w-7 h-7 rounded-full bg-background/60 backdrop-blur flex items-center justify-center"
-                  >
-                    <Heart size={14} className={clip.is_favorite ? "fill-foreground text-foreground" : "text-muted-foreground"} />
-                  </button>
-                </div>
-                <span className="absolute bottom-2 right-2 text-xs bg-background/80 backdrop-blur px-2 py-0.5 rounded font-medium">
+                <Play size={28} className="text-muted-foreground/40 group-hover:text-foreground/60 transition-colors" />
+                <button
+                  onClick={() => toggleFav.mutate({ clipId: clip.id, isFavorite: !clip.is_favorite })}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/60 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Heart size={13} className={clip.is_favorite ? "fill-foreground text-foreground" : "text-muted-foreground"} />
+                </button>
+                <span className="absolute bottom-2 right-2 text-[10px] bg-background/80 backdrop-blur px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+                  <Clock size={10} />
                   {formatDuration(clip.duration_seconds)}
                 </span>
               </div>
 
-              <div className="p-4 space-y-3">
+              <div className="p-3.5 space-y-2.5">
                 <h3 className="text-sm font-bold truncate">{clip.title}</h3>
 
                 <div>
-                  <div className="text-xs text-muted-foreground mb-1">Score de Viralidade</div>
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
+                    <BarChart3 size={10} />
+                    Score de Viralidade
+                  </div>
                   <ScoreBar score={clip.virality_score || 0} />
                   <ViralityDetails details={clip.virality_details} />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button variant="default" size="sm" className="flex-1">
-                    <Download size={14} className="mr-1" /> Exportar
+                <div className="flex items-center gap-1.5 pt-1">
+                  <Button variant="default" size="sm" className="flex-1 h-8 text-xs">
+                    <Download size={12} className="mr-1" /> Exportar
                   </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href="/dashboard/editor"><Scissors size={14} /></a>
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
+                    <a href="/dashboard/editor"><Scissors size={12} /></a>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(clip.id)}>
-                    <Trash2 size={14} />
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(clip.id)}>
+                    <Trash2 size={12} />
                   </Button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
