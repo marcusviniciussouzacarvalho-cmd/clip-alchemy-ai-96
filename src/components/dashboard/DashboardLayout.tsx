@@ -119,9 +119,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           <Link to="/" className="font-display text-base font-extrabold">
             VENUS<span className="text-muted-foreground">CLIP</span>
           </Link>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="text-foreground p-1">
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="text-foreground p-1">
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu */}
