@@ -56,6 +56,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     credits: "Créditos",
     "brand-kit": "Brand Kit",
     settings: "Configurações",
+    notifications: "Notificações",
     admin: "Admin",
   };
 
