@@ -121,7 +121,7 @@ export function useProcessVideo() {
 export function useJobs(videoId?: string) {
   return useQuery({
     queryKey: ["jobs", videoId],
-    refetchInterval: 3000, // Poll every 3s for active jobs
+    // No polling needed - using Supabase Realtime instead
     queryFn: async () => {
       const params = new URLSearchParams();
       if (videoId) params.set("video_id", videoId);
@@ -151,11 +151,7 @@ export function useJob(jobId: string | undefined) {
   return useQuery({
     queryKey: ["job", jobId],
     enabled: !!jobId,
-    refetchInterval: (query) => {
-      const job = query.state.data;
-      if (job && (job.status === "completed" || job.status === "failed")) return false;
-      return 2000;
-    },
+    // No polling needed - using Supabase Realtime instead
     queryFn: async () => {
       const { data, error } = await supabase
         .from("processing_jobs")

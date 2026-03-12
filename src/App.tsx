@@ -26,6 +26,8 @@ const DashboardImport = lazy(() => import("./pages/DashboardImport"));
 const DashboardScriptGenerator = lazy(() => import("./pages/DashboardScriptGenerator"));
 const DashboardTrends = lazy(() => import("./pages/DashboardTrends"));
 const DashboardHooks = lazy(() => import("./pages/DashboardHooks"));
+const DashboardNotifications = lazy(() => import("./pages/DashboardNotifications"));
+const DashboardSettings = lazy(() => import("./pages/DashboardSettings"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Contact = lazy(() => import("./pages/Contact"));
@@ -75,7 +77,8 @@ const App = () => (
             <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
             <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />
             <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
-            <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/notifications" element={<ProtectedRoute><DashboardNotifications /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/contact" element={<Contact />} />

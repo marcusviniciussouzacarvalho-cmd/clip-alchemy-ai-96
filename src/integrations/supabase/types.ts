@@ -223,6 +223,81 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          billing_updates: boolean
+          clip_ready: boolean
+          created_at: string
+          id: string
+          processing_errors: boolean
+          processing_updates: boolean
+          product_news: boolean
+          system_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_updates?: boolean
+          clip_ready?: boolean
+          created_at?: string
+          id?: string
+          processing_errors?: boolean
+          processing_updates?: boolean
+          product_news?: boolean
+          system_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_updates?: boolean
+          clip_ready?: boolean
+          created_at?: string
+          id?: string
+          processing_errors?: boolean
+          processing_updates?: boolean
+          product_news?: boolean
+          system_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       processing_jobs: {
         Row: {
           completed_at: string | null

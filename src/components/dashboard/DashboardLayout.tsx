@@ -1,8 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor, Sparkles } from "lucide-react";
+import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { useRealtimeJobs, useRealtimeNotifications, useRealtimeClipsAndVideos } from "@/hooks/use-realtime";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -25,6 +27,11 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Activate realtime subscriptions
+  useRealtimeJobs();
+  useRealtimeNotifications();
+  useRealtimeClipsAndVideos();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -49,6 +56,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     credits: "Créditos",
     "brand-kit": "Brand Kit",
     settings: "Configurações",
+    notifications: "Notificações",
     admin: "Admin",
   };
 
@@ -111,9 +119,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           <Link to="/" className="font-display text-base font-extrabold">
             VENUS<span className="text-muted-foreground">CLIP</span>
           </Link>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="text-foreground p-1">
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="text-foreground p-1">
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu */}
@@ -146,15 +157,18 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         )}
 
         {/* Breadcrumb */}
-        <div className="hidden md:flex items-center gap-1 px-8 pt-6 text-xs text-muted-foreground">
-          {pathSegments.map((seg, i) => (
-            <span key={seg} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight size={12} />}
-              <span className={i === pathSegments.length - 1 ? "text-foreground font-medium" : ""}>
-                {breadcrumbLabels[seg] || seg}
+        <div className="hidden md:flex items-center justify-between px-8 pt-6">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            {pathSegments.map((seg, i) => (
+              <span key={seg} className="flex items-center gap-1">
+                {i > 0 && <ChevronRight size={12} />}
+                <span className={i === pathSegments.length - 1 ? "text-foreground font-medium" : ""}>
+                  {breadcrumbLabels[seg] || seg}
+                </span>
               </span>
-            </span>
-          ))}
+            ))}
+          </div>
+          <NotificationBell />
         </div>
 
         <div className="p-5 md:px-8 md:py-6">
