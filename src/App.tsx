@@ -4,26 +4,48 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+// Eager load critical pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import DashboardUpload from "./pages/DashboardUpload";
-import DashboardClips from "./pages/DashboardClips";
-import DashboardEditor from "./pages/DashboardEditor";
-import DashboardAnalytics from "./pages/DashboardAnalytics";
-import DashboardCredits from "./pages/DashboardCredits";
-import DashboardLibrary from "./pages/DashboardLibrary";
-import DashboardBrandKit from "./pages/DashboardBrandKit";
-import DashboardAdmin from "./pages/DashboardAdmin";
-import PricingPage from "./pages/PricingPage";
-import Demo from "./pages/Demo";
-import Contact from "./pages/Contact";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Lazy load dashboard pages
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardUpload = lazy(() => import("./pages/DashboardUpload"));
+const DashboardClips = lazy(() => import("./pages/DashboardClips"));
+const DashboardEditor = lazy(() => import("./pages/DashboardEditor"));
+const DashboardAnalytics = lazy(() => import("./pages/DashboardAnalytics"));
+const DashboardCredits = lazy(() => import("./pages/DashboardCredits"));
+const DashboardLibrary = lazy(() => import("./pages/DashboardLibrary"));
+const DashboardBrandKit = lazy(() => import("./pages/DashboardBrandKit"));
+const DashboardAdmin = lazy(() => import("./pages/DashboardAdmin"));
+const DashboardImport = lazy(() => import("./pages/DashboardImport"));
+const PricingPage = lazy(() => import("./pages/PricingPage"));
+const Demo = lazy(() => import("./pages/Demo"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <Loader2 size={28} className="animate-spin text-muted-foreground" />
+  </div>
+);
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2, // 2 min cache
+      gcTime: 1000 * 60 * 10, // 10 min garbage collection
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -31,28 +53,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/upload" element={<ProtectedRoute><DashboardUpload /></ProtectedRoute>} />
-          <Route path="/dashboard/clips" element={<ProtectedRoute><DashboardClips /></ProtectedRoute>} />
-          <Route path="/dashboard/editor" element={<ProtectedRoute><DashboardEditor /></ProtectedRoute>} />
-          <Route path="/dashboard/analytics" element={<ProtectedRoute><DashboardAnalytics /></ProtectedRoute>} />
-          <Route path="/dashboard/credits" element={<ProtectedRoute><DashboardCredits /></ProtectedRoute>} />
-          <Route path="/dashboard/library" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
-          <Route path="/dashboard/brand-kit" element={<ProtectedRoute><DashboardBrandKit /></ProtectedRoute>} />
-          <Route path="/dashboard/admin" element={<ProtectedRoute><DashboardAdmin /></ProtectedRoute>} />
-          <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
-          <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/demo" element={<Demo />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/upload" element={<ProtectedRoute><DashboardUpload /></ProtectedRoute>} />
+            <Route path="/dashboard/import" element={<ProtectedRoute><DashboardImport /></ProtectedRoute>} />
+            <Route path="/dashboard/clips" element={<ProtectedRoute><DashboardClips /></ProtectedRoute>} />
+            <Route path="/dashboard/editor" element={<ProtectedRoute><DashboardEditor /></ProtectedRoute>} />
+            <Route path="/dashboard/analytics" element={<ProtectedRoute><DashboardAnalytics /></ProtectedRoute>} />
+            <Route path="/dashboard/credits" element={<ProtectedRoute><DashboardCredits /></ProtectedRoute>} />
+            <Route path="/dashboard/library" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
+            <Route path="/dashboard/brand-kit" element={<ProtectedRoute><DashboardBrandKit /></ProtectedRoute>} />
+            <Route path="/dashboard/admin" element={<ProtectedRoute><DashboardAdmin /></ProtectedRoute>} />
+            <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/demo" element={<Demo />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
