@@ -7,6 +7,7 @@ import { toast } from "sonner";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Upload, label: "Upload", href: "/dashboard/upload" },
+  { icon: Link2, label: "Importar", href: "/dashboard/import" },
   { icon: FolderOpen, label: "Biblioteca", href: "/dashboard/library" },
   { icon: Scissors, label: "Clips", href: "/dashboard/clips" },
   { icon: Video, label: "Editor", href: "/dashboard/editor" },
