@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2 } from "lucide-react";
+import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,6 +12,9 @@ const navItems = [
   { icon: Scissors, label: "Clips", href: "/dashboard/clips" },
   { icon: Video, label: "Editor", href: "/dashboard/editor" },
   { icon: FileText, label: "Transcrições", href: "/dashboard/transcripts" },
+  { icon: PenTool, label: "Roteiro", href: "/dashboard/script" },
+  { icon: TrendingUp, label: "Tendências", href: "/dashboard/trends" },
+  { icon: Anchor, label: "Hooks", href: "/dashboard/hooks" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: CreditCard, label: "Créditos", href: "/dashboard/credits" },
   { icon: Palette, label: "Brand Kit", href: "/dashboard/brand-kit" },
@@ -40,6 +43,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     editor: "Editor",
     transcripts: "Transcrições",
     analytics: "Analytics",
+    script: "Roteiro",
+    trends: "Tendências",
+    hooks: "Hooks",
     credits: "Créditos",
     "brand-kit": "Brand Kit",
     settings: "Configurações",

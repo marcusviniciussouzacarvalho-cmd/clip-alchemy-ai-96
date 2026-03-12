@@ -1,10 +1,13 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Scissors, Download, Play, Heart, Trash2, Loader2, BarChart3, Clock } from "lucide-react";
+import { Scissors, Download, Play, Heart, Trash2, Loader2, BarChart3, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useClips, useToggleFavorite, useDeleteClip } from "@/hooks/use-pipeline";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ViralTitles } from "@/components/ai/ViralTitles";
+import { ClipSuggestions } from "@/components/ai/ClipSuggestions";
+import { useState } from "react";
 
 const ScoreBar = ({ score }: { score: number }) => {
   const color = score >= 85 ? 'bg-emerald-400' : score >= 70 ? 'bg-amber-400' : 'bg-destructive';
@@ -51,6 +54,7 @@ const DashboardClips = () => {
   const { data: clips, isLoading } = useClips();
   const toggleFav = useToggleFavorite();
   const deleteClip = useDeleteClip();
+  const [expandedClip, setExpandedClip] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
     deleteClip.mutate(id, {
@@ -147,7 +151,25 @@ const DashboardClips = () => {
                   <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(clip.id)}>
                     <Trash2 size={12} />
                   </Button>
+                  <Button
+                    variant="outline" size="sm" className="h-8 w-8 p-0"
+                    onClick={() => setExpandedClip(expandedClip === clip.id ? null : clip.id)}
+                  >
+                    {expandedClip === clip.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </Button>
                 </div>
+
+                {expandedClip === clip.id && (
+                  <div className="pt-2 space-y-3 border-t border-border mt-2">
+                    <ClipSuggestions
+                      title={clip.title}
+                      durationSeconds={clip.duration_seconds || 0}
+                      viralityScore={clip.virality_score || 0}
+                      transcript={clip.transcript_text || undefined}
+                    />
+                    <ViralTitles clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
