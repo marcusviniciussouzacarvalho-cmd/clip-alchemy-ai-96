@@ -28,6 +28,11 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Activate realtime subscriptions
+  useRealtimeJobs();
+  useRealtimeNotifications();
+  useRealtimeClipsAndVideos();
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Sessão encerrada");
