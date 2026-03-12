@@ -8,6 +8,8 @@ import { VideoSummary } from "@/components/ai/VideoSummary";
 import { AutoChapters } from "@/components/ai/AutoChapters";
 import { ViralMoments } from "@/components/ai/ViralMoments";
 import { DerivedContent } from "@/components/ai/DerivedContent";
+import { RetentionChart } from "@/components/ai/RetentionChart";
+import { HookDetector } from "@/components/ai/HookDetector";
 
 const DashboardEditor = () => {
   const [playing, setPlaying] = useState(false);
