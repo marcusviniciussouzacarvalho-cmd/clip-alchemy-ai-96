@@ -17,6 +17,8 @@ const navItems = [
   { icon: PenTool, label: "Roteiro", href: "/dashboard/script" },
   { icon: TrendingUp, label: "Tendências", href: "/dashboard/trends" },
   { icon: Anchor, label: "Hooks", href: "/dashboard/hooks" },
+  { icon: Hash, label: "Social Tools", href: "/dashboard/social-tools" },
+  { icon: Lightbulb, label: "Ideias", href: "/dashboard/ideas" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: CreditCard, label: "Créditos", href: "/dashboard/credits" },
   { icon: Palette, label: "Brand Kit", href: "/dashboard/brand-kit" },

@@ -81,6 +81,8 @@ const App = () => (
             <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
             <Route path="/dashboard/notifications" element={<ProtectedRoute><DashboardNotifications /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
+            <Route path="/dashboard/social-tools" element={<ProtectedRoute><DashboardSocialTools /></ProtectedRoute>} />
+            <Route path="/dashboard/ideas" element={<ProtectedRoute><DashboardIdeas /></ProtectedRoute>} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/contact" element={<Contact />} />

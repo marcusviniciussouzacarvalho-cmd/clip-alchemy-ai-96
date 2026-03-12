@@ -26,7 +26,7 @@ const DashboardIdeas = () => {
   const [savedIdeas, setSavedIdeas] = useState<any[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
   const ideaMut = useContentIdeas();
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
 
   const loadSaved = async () => {
     if (!user) return;
