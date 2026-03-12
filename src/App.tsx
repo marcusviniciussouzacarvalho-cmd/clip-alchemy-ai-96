@@ -77,7 +77,8 @@ const App = () => (
             <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
             <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />
             <Route path="/dashboard/transcripts" element={<ProtectedRoute><DashboardLibrary /></ProtectedRoute>} />
-            <Route path="/dashboard/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/notifications" element={<ProtectedRoute><DashboardNotifications /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><DashboardSettings /></ProtectedRoute>} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/contact" element={<Contact />} />
