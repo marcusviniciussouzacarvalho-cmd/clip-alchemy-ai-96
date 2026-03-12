@@ -1,14 +1,32 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
+import { useSupabaseAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useSupabaseAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await signUp(email, password, name);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Conta criada! Verifique seu email.");
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -28,23 +46,23 @@ const Signup = () => {
           <h1 className="text-2xl font-extrabold mb-2">Criar conta</h1>
           <p className="text-sm text-muted-foreground mb-8">Comece a criar clips virais agora</p>
 
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="name">Nome</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-1" />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" className="mt-1" required />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required />
             </div>
             <div>
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" minLength={6} required />
             </div>
-            <Button className="w-full" variant="default" asChild>
-              <Link to="/dashboard">Criar conta</Link>
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "Criando..." : "Criar conta"}
             </Button>
-          </div>
+          </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Já tem conta?{" "}

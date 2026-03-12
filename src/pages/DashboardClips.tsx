@@ -1,16 +1,8 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Scissors, Star, Download, RefreshCw, Play, BarChart3, Heart, Trash2 } from "lucide-react";
-import { useState } from "react";
-
-const mockClips = [
-  { id: 1, title: "Momento chave - gancho forte", duration: "0:42", score: 92, status: "approved", favorite: true },
-  { id: 2, title: "Dica prática de marketing", duration: "0:58", score: 85, status: "pending", favorite: false },
-  { id: 3, title: "História de sucesso", duration: "1:15", score: 78, status: "pending", favorite: false },
-  { id: 4, title: "Pergunta do público", duration: "0:35", score: 71, status: "rejected", favorite: false },
-  { id: 5, title: "Conclusão impactante", duration: "0:48", score: 88, status: "approved", favorite: true },
-  { id: 6, title: "Introdução viral", duration: "0:30", score: 95, status: "approved", favorite: false },
-];
+import { Scissors, Download, RefreshCw, Play, BarChart3, Heart, Trash2, Loader2 } from "lucide-react";
+import { useClips, useToggleFavorite, useDeleteClip } from "@/hooks/use-pipeline";
+import { toast } from "sonner";
 
 const ScoreBar = ({ score }: { score: number }) => (
   <div className="flex items-center gap-2">
@@ -24,11 +16,47 @@ const ScoreBar = ({ score }: { score: number }) => (
   </div>
 );
 
-const DashboardClips = () => {
-  const [clips, setClips] = useState(mockClips);
+const ViralityDetails = ({ details }: { details: any }) => {
+  if (!details) return null;
+  const items = [
+    { label: "Gancho", value: details.hook_strength },
+    { label: "Emoção", value: details.emotion },
+    { label: "Ritmo", value: details.pacing },
+    { label: "Retenção", value: details.retention },
+  ];
 
-  const toggleFav = (id: number) => {
-    setClips(clips.map(c => c.id === id ? { ...c, favorite: !c.favorite } : c));
+  return (
+    <div className="space-y-1.5 mt-2">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground w-14">{item.label}</span>
+          <div className="flex-1 h-1 rounded-full bg-accent overflow-hidden">
+            <div className="h-full rounded-full bg-foreground/60" style={{ width: `${item.value}%` }} />
+          </div>
+          <span className="w-6 text-right">{item.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const DashboardClips = () => {
+  const { data: clips, isLoading } = useClips();
+  const toggleFav = useToggleFavorite();
+  const deleteClip = useDeleteClip();
+
+  const handleDelete = (id: string) => {
+    deleteClip.mutate(id, {
+      onSuccess: () => toast.success("Clip removido"),
+      onError: (err: any) => toast.error(err.message),
+    });
+  };
+
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return "—";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -36,60 +64,67 @@ const DashboardClips = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-extrabold mb-1">Clips</h1>
-          <p className="text-sm text-muted-foreground">{clips.length} clips gerados</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <RefreshCw size={14} className="mr-1" /> Regenerar
-          </Button>
-          <Button variant="outline" size="sm">
-            <BarChart3 size={14} className="mr-1" /> Comparar
-          </Button>
+          <p className="text-sm text-muted-foreground">{clips?.length || 0} clips gerados</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {clips.map((clip) => (
-          <div key={clip.id} className="venus-card overflow-hidden group">
-            {/* Video preview */}
-            <div className="aspect-video bg-accent flex items-center justify-center relative">
-              <Play size={32} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-              <div className="absolute top-2 right-2 flex gap-1">
-                <button
-                  onClick={() => toggleFav(clip.id)}
-                  className="w-7 h-7 rounded-full bg-background/60 backdrop-blur flex items-center justify-center"
-                >
-                  <Heart size={14} className={clip.favorite ? "fill-foreground text-foreground" : "text-muted-foreground"} />
-                </button>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={32} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : !clips || clips.length === 0 ? (
+        <div className="venus-card p-12 text-center">
+          <Scissors size={40} className="mx-auto mb-4 text-muted-foreground" />
+          <h3 className="font-bold text-lg mb-2">Nenhum clip gerado</h3>
+          <p className="text-sm text-muted-foreground mb-4">Faça upload de um vídeo para gerar clips automaticamente</p>
+          <Button variant="outline" asChild>
+            <a href="/dashboard/upload">Upload de vídeo</a>
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {clips.map((clip) => (
+            <div key={clip.id} className="venus-card overflow-hidden group">
+              <div className="aspect-video bg-accent flex items-center justify-center relative">
+                <Play size={32} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                <div className="absolute top-2 right-2">
+                  <button
+                    onClick={() => toggleFav.mutate({ clipId: clip.id, isFavorite: !clip.is_favorite })}
+                    className="w-7 h-7 rounded-full bg-background/60 backdrop-blur flex items-center justify-center"
+                  >
+                    <Heart size={14} className={clip.is_favorite ? "fill-foreground text-foreground" : "text-muted-foreground"} />
+                  </button>
+                </div>
+                <span className="absolute bottom-2 right-2 text-xs bg-background/80 backdrop-blur px-2 py-0.5 rounded font-medium">
+                  {formatDuration(clip.duration_seconds)}
+                </span>
               </div>
-              <span className="absolute bottom-2 right-2 text-xs bg-background/80 backdrop-blur px-2 py-0.5 rounded font-medium">{clip.duration}</span>
+
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-bold truncate">{clip.title}</h3>
+
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Score de Viralidade</div>
+                  <ScoreBar score={clip.virality_score || 0} />
+                  <ViralityDetails details={clip.virality_details} />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button variant="default" size="sm" className="flex-1">
+                    <Download size={14} className="mr-1" /> Exportar
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="/dashboard/editor"><Scissors size={14} /></a>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDelete(clip.id)}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
+              </div>
             </div>
-
-            <div className="p-4 space-y-3">
-              <h3 className="text-sm font-bold truncate">{clip.title}</h3>
-
-              {/* Virality Score */}
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Score de Viralidade</div>
-                <ScoreBar score={clip.score} />
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <Button variant="default" size="sm" className="flex-1">
-                  <Download size={14} className="mr-1" /> Exportar
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Scissors size={14} />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </DashboardLayout>
   );
 };

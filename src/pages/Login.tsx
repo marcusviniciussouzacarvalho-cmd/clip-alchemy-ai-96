@@ -1,13 +1,30 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
+import { useSupabaseAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useSupabaseAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await signIn(email, password);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -20,19 +37,19 @@ const Login = () => {
           <h1 className="text-2xl font-extrabold mb-2">Entrar</h1>
           <p className="text-sm text-muted-foreground mb-8">Acesse sua conta VenusClip</p>
 
-          <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="mt-1" required />
             </div>
             <div>
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" required />
             </div>
-            <Button className="w-full" variant="default" asChild>
-              <Link to="/dashboard">Entrar</Link>
+            <Button className="w-full" type="submit" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
             </Button>
-          </div>
+          </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Não tem conta?{" "}
