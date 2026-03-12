@@ -97,17 +97,19 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         </nav>
 
         <div className="border-t border-border px-3 py-3 space-y-0.5">
-          <Link
-            to="/dashboard/admin"
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
-              location.pathname === "/dashboard/admin"
-                ? "bg-foreground text-background font-semibold"
-                : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-            }`}
-          >
-            <Shield size={16} strokeWidth={1.5} />
-            Admin
-          </Link>
+          {isAdmin && (
+            <Link
+              to="/dashboard/admin"
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
+                location.pathname === "/dashboard/admin"
+                  ? "bg-foreground text-background font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+              }`}
+            >
+              <Shield size={16} strokeWidth={1.5} />
+              Admin
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all"
