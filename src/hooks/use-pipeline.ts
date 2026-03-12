@@ -151,11 +151,7 @@ export function useJob(jobId: string | undefined) {
   return useQuery({
     queryKey: ["job", jobId],
     enabled: !!jobId,
-    refetchInterval: (query) => {
-      const job = query.state.data;
-      if (job && (job.status === "completed" || job.status === "failed")) return false;
-      return 2000;
-    },
+    // No polling needed - using Supabase Realtime instead
     queryFn: async () => {
       const { data, error } = await supabase
         .from("processing_jobs")
