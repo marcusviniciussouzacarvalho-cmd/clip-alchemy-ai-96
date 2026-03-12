@@ -188,6 +188,7 @@ const DashboardClips = () => {
           ))}
         </div>
         </div>
+      )}
     </DashboardLayout>
   );
 };
