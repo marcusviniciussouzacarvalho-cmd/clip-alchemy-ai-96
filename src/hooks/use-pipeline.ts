@@ -121,7 +121,7 @@ export function useProcessVideo() {
 export function useJobs(videoId?: string) {
   return useQuery({
     queryKey: ["jobs", videoId],
-    refetchInterval: 3000, // Poll every 3s for active jobs
+    // No polling needed - using Supabase Realtime instead
     queryFn: async () => {
       const params = new URLSearchParams();
       if (videoId) params.set("video_id", videoId);
