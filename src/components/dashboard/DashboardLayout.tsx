@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useRealtimeJobs, useRealtimeNotifications, useRealtimeClipsAndVideos } from "@/hooks/use-realtime";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
