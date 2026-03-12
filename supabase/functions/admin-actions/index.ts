@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "credits":
       case "update_credits": {
         const newBalance = parseInt(params.balance, 10);
         if (isNaN(newBalance) || newBalance < 0) {
