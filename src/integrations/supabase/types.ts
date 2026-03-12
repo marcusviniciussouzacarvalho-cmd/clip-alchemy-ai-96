@@ -14,7 +14,422 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      captions: {
+        Row: {
+          clip_id: string
+          created_at: string
+          end_time: number
+          id: string
+          start_time: number
+          style: Json | null
+          text: string
+          user_id: string
+        }
+        Insert: {
+          clip_id: string
+          created_at?: string
+          end_time: number
+          id?: string
+          start_time: number
+          style?: Json | null
+          text: string
+          user_id: string
+        }
+        Update: {
+          clip_id?: string
+          created_at?: string
+          end_time?: number
+          id?: string
+          start_time?: number
+          style?: Json | null
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "captions_clip_id_fkey"
+            columns: ["clip_id"]
+            isOneToOne: false
+            referencedRelation: "clips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clips: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          end_time: number
+          file_path: string | null
+          format: string | null
+          id: string
+          is_favorite: boolean | null
+          start_time: number
+          status: string | null
+          template_id: string | null
+          thumbnail_path: string | null
+          title: string
+          transcript_text: string | null
+          updated_at: string
+          user_id: string
+          video_id: string
+          virality_details: Json | null
+          virality_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          end_time: number
+          file_path?: string | null
+          format?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          start_time: number
+          status?: string | null
+          template_id?: string | null
+          thumbnail_path?: string | null
+          title: string
+          transcript_text?: string | null
+          updated_at?: string
+          user_id: string
+          video_id: string
+          virality_details?: Json | null
+          virality_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          end_time?: number
+          file_path?: string | null
+          format?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          start_time?: number
+          status?: string | null
+          template_id?: string | null
+          thumbnail_path?: string | null
+          title?: string
+          transcript_text?: string | null
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+          virality_details?: Json | null
+          virality_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clips_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          job_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          job_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          job_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "processing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credits: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      job_logs: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          level: string
+          message: string
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          level?: string
+          message: string
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          level?: string
+          message?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "processing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      processing_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: string | null
+          error_message: string | null
+          id: string
+          options: Json | null
+          progress: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          id?: string
+          options?: Json | null
+          progress?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          id?: string
+          options?: Json | null
+          progress?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processing_jobs_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transcript_segments: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          end_time: number
+          id: string
+          speaker: string | null
+          start_time: number
+          text: string
+          transcript_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          end_time: number
+          id?: string
+          speaker?: string | null
+          start_time: number
+          text: string
+          transcript_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          end_time?: number
+          id?: string
+          speaker?: string | null
+          start_time?: number
+          text?: string
+          transcript_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_segments_transcript_id_fkey"
+            columns: ["transcript_id"]
+            isOneToOne: false
+            referencedRelation: "transcripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transcripts: {
+        Row: {
+          created_at: string
+          full_text: string | null
+          id: string
+          language: string | null
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_text?: string | null
+          id?: string
+          language?: string | null
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          full_text?: string | null
+          id?: string
+          language?: string | null
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcripts_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          language: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          language?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          language?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +438,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      job_status:
+        | "queued"
+        | "processing"
+        | "transcribing"
+        | "analyzing"
+        | "generating_clips"
+        | "rendering"
+        | "completed"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +573,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      job_status: [
+        "queued",
+        "processing",
+        "transcribing",
+        "analyzing",
+        "generating_clips",
+        "rendering",
+        "completed",
+        "failed",
+      ],
+    },
   },
 } as const
