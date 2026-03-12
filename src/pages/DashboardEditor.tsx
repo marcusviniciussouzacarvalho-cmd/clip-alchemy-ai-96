@@ -8,6 +8,8 @@ import { VideoSummary } from "@/components/ai/VideoSummary";
 import { AutoChapters } from "@/components/ai/AutoChapters";
 import { ViralMoments } from "@/components/ai/ViralMoments";
 import { DerivedContent } from "@/components/ai/DerivedContent";
+import { RetentionChart } from "@/components/ai/RetentionChart";
+import { HookDetector } from "@/components/ai/HookDetector";
 
 const DashboardEditor = () => {
   const [playing, setPlaying] = useState(false);
@@ -117,8 +119,9 @@ const DashboardEditor = () => {
               </div>
             </div>
           </div>
+          {/* Retention Chart - below timeline */}
+          <RetentionChart transcript="Exemplo de transcrição do vídeo para análise de retenção." durationSeconds={totalDuration} />
         </div>
-
         {/* Tools sidebar */}
         <div className="space-y-3">
           <div className="venus-card p-4">
@@ -182,6 +185,7 @@ const DashboardEditor = () => {
           <Button className="w-full" size="sm">Salvar alterações</Button>
 
           {/* AI Panels */}
+          <HookDetector transcript="Exemplo de transcrição do vídeo para detectar o hook." />
           <VideoSummary transcript="Exemplo de transcrição do vídeo para demonstração das funcionalidades de IA." />
           <AutoChapters transcript="Exemplo de transcrição do vídeo." durationSeconds={totalDuration} />
           <ViralMoments transcript="Exemplo de transcrição do vídeo." />

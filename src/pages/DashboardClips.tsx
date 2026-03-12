@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ViralTitles } from "@/components/ai/ViralTitles";
 import { ClipSuggestions } from "@/components/ai/ClipSuggestions";
+import { AdvancedVirality } from "@/components/ai/AdvancedVirality";
+import { ClipComparison } from "@/components/ai/ClipComparison";
 import { useState } from "react";
 
 const ScoreBar = ({ score }: { score: number }) => {
@@ -106,7 +108,13 @@ const DashboardClips = () => {
           </Button>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="space-y-4">
+          {/* Clip Comparison tool */}
+          {clips && clips.length >= 2 && (
+            <ClipComparison clips={clips} />
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {clips.map((clip, i) => (
             <motion.div
               key={clip.id}
@@ -167,12 +175,18 @@ const DashboardClips = () => {
                       viralityScore={clip.virality_score || 0}
                       transcript={clip.transcript_text || undefined}
                     />
+                    <AdvancedVirality
+                      title={clip.title}
+                      durationSeconds={clip.duration_seconds || 0}
+                      transcript={clip.transcript_text || undefined}
+                    />
                     <ViralTitles clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
                   </div>
                 )}
               </div>
             </motion.div>
           ))}
+        </div>
         </div>
       )}
     </DashboardLayout>
