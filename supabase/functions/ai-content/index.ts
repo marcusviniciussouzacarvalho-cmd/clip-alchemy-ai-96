@@ -150,6 +150,49 @@ ${params.clips?.map((c: any, i: number) => `Clip ${i + 1}: Título="${c.title}",
 Responda APENAS com um JSON objeto: "winner_index" (number - índice do melhor clip, começando em 0), "reason" (string), "rankings" (array de objetos com "index" number, "strengths" string[], "weaknesses" string[], "recommendation" string).`;
         break;
       }
+      case "generate_hashtags": {
+        systemPrompt = "Você é um especialista em SEO e hashtags para redes sociais.";
+        userPrompt = `Gere entre 8 e 15 hashtags otimizadas para este conteúdo:
+Título: "${params.title}"
+Tema: "${params.topic || ''}"
+Transcrição: "${params.transcript || ''}"
+
+Responda APENAS com um JSON objeto: "hashtags" (string[] - sem o #), "primary" (string[] - 3-5 hashtags principais), "niche" (string[] - 3-5 hashtags de nicho), "trending" (string[] - 2-3 hashtags em alta).`;
+        break;
+      }
+      case "generate_description": {
+        systemPrompt = "Você é um copywriter especializado em descrições de vídeos para redes sociais.";
+        userPrompt = `Gere uma descrição otimizada para este vídeo:
+Título: "${params.title}"
+Transcrição: "${params.transcript || ''}"
+Plataforma: "${params.platform || 'YouTube'}"
+
+A descrição deve: resumir o conteúdo, incluir palavras-chave, incentivar engajamento e ter CTA.
+
+Responda APENAS com um JSON objeto: "description" (string - a descrição completa), "short_version" (string - versão curta para Instagram/TikTok), "keywords" (string[] - palavras-chave usadas), "emojis_version" (string - versão com emojis).`;
+        break;
+      }
+      case "generate_cta": {
+        systemPrompt = "Você é um especialista em call-to-actions virais para criadores de conteúdo.";
+        userPrompt = `Gere 5 CTAs (call to action) para o final deste vídeo:
+Título: "${params.title}"
+Tema: "${params.topic || ''}"
+Objetivo: "${params.goal || 'engajamento'}"
+
+Responda APENAS com um JSON array de objetos: "text" (string - o CTA), "type" (string - "seguir" | "compartilhar" | "comentar" | "link" | "inscrever"), "strength" (number 1-100), "best_for" (string - melhor plataforma).`;
+        break;
+      }
+      case "content_ideas": {
+        systemPrompt = "Você é um estrategista de conteúdo criativo para redes sociais.";
+        userPrompt = `Gere 6 ideias de vídeos sobre este tema:
+Tema: "${params.topic}"
+Nicho: "${params.niche || 'geral'}"
+
+Para cada ideia, inclua título, hook inicial e formato sugerido.
+
+Responda APENAS com um JSON array de objetos: "title" (string), "hook" (string - frase de abertura), "format" (string - "tutorial" | "storytelling" | "lista" | "opinião" | "react" | "vlog"), "estimated_views" (string - "alto" | "médio" | "moderado"), "description" (string - 1 frase sobre o conteúdo).`;
+        break;
+      }
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400,
