@@ -7,7 +7,7 @@ import { Lightbulb, Loader2, Bookmark, Trash2, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/use-auth";
+import { useSupabaseAuth } from "@/hooks/use-auth";
 
 const formatColors: Record<string, string> = {
   tutorial: "bg-blue-500/20 text-blue-400",
