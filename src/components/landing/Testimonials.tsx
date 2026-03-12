@@ -15,10 +15,10 @@ const Testimonials = () => (
         viewport={{ once: true }}
         className="text-center mb-16"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">O que dizem nossos usuários</h2>
+        <h2 className="text-3xl md:text-5xl font-bold mb-4">O que dizem nossos usuários</h2>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {testimonials.map((t, i) => (
           <motion.div
             key={t.name}
@@ -26,15 +26,15 @@ const Testimonials = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1 }}
-            className="p-6 rounded-xl venus-border bg-background"
+            className="p-6 rounded-xl venus-card"
           >
             <p className="text-sm text-muted-foreground mb-6 leading-relaxed">"{t.text}"</p>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center text-xs font-semibold">
+              <div className="w-9 h-9 rounded-full bg-accent border border-border flex items-center justify-center text-xs font-bold">
                 {t.name[0]}
               </div>
               <div>
-                <div className="text-sm font-semibold">{t.name}</div>
+                <div className="text-sm font-bold">{t.name}</div>
                 <div className="text-xs text-muted-foreground">{t.role}</div>
               </div>
             </div>

@@ -51,13 +51,13 @@ const Pricing = () => (
         viewport={{ once: true }}
         className="text-center mb-16"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Planos e preços</h2>
+        <h2 className="text-3xl md:text-5xl font-bold mb-4">Planos e preços</h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
           Escolha o plano ideal para seu fluxo de trabalho
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {plans.map((p, i) => (
           <motion.div
             key={p.name}
@@ -68,14 +68,14 @@ const Pricing = () => (
             className={`p-6 rounded-xl flex flex-col ${
               p.highlighted
                 ? "bg-foreground text-background border-2 border-foreground venus-glow"
-                : "bg-background venus-border"
+                : "venus-card"
             }`}
           >
-            <div className="text-xs font-display font-semibold uppercase tracking-wider mb-3 opacity-60">
+            <div className="text-xs font-display font-bold uppercase tracking-widest mb-3 opacity-60">
               {p.name}
             </div>
             <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-3xl font-bold font-display">{p.price}</span>
+              <span className="text-3xl font-extrabold font-display">{p.price}</span>
               <span className="text-sm opacity-60">{p.period}</span>
             </div>
             <p className="text-sm opacity-60 mb-6">{p.desc}</p>
