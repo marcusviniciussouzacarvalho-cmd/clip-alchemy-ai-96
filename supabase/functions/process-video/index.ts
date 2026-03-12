@@ -329,11 +329,21 @@ async function processVideoAsync(
 
     // Deduct credits
     const creditCost = 30 + Math.floor(Math.random() * 20);
-    await supabase.rpc// We can't use rpc here, use direct update
-    await supabase
+    const { data: currentCredits } = await supabase
       .from("credits")
-      .update({ balance: supabase.raw(`balance - ${creditCost}`), total_used: supabase.raw(`total_used + ${creditCost}`) })
-      .eq("user_id", userId);
+      .select("balance, total_used")
+      .eq("user_id", userId)
+      .single();
+
+    if (currentCredits) {
+      await supabase
+        .from("credits")
+        .update({
+          balance: Math.max(0, currentCredits.balance - creditCost),
+          total_used: currentCredits.total_used + creditCost,
+        })
+        .eq("user_id", userId);
+    }
 
     await supabase.from("credit_transactions").insert({
       user_id: userId,
