@@ -187,7 +187,7 @@ const DashboardClips = () => {
             </motion.div>
           ))}
         </div>
-      )}
+        </div>
     </DashboardLayout>
   );
 };

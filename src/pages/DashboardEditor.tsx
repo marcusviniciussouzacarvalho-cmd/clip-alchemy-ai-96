@@ -185,6 +185,7 @@ const DashboardEditor = () => {
           <Button className="w-full" size="sm">Salvar alterações</Button>
 
           {/* AI Panels */}
+          <HookDetector transcript="Exemplo de transcrição do vídeo para detectar o hook." />
           <VideoSummary transcript="Exemplo de transcrição do vídeo para demonstração das funcionalidades de IA." />
           <AutoChapters transcript="Exemplo de transcrição do vídeo." durationSeconds={totalDuration} />
           <ViralMoments transcript="Exemplo de transcrição do vídeo." />
