@@ -182,6 +182,7 @@ const DashboardClips = () => {
                       transcript={clip.transcript_text || undefined}
                     />
                     <ViralTitles clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
+                    <ThumbnailGenerator clipTitle={clip.title} transcript={clip.transcript_text || undefined} />
                   </div>
                 )}
               </div>
