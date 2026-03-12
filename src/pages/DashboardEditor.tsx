@@ -4,6 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { VideoSummary } from "@/components/ai/VideoSummary";
+import { AutoChapters } from "@/components/ai/AutoChapters";
+import { ViralMoments } from "@/components/ai/ViralMoments";
+import { DerivedContent } from "@/components/ai/DerivedContent";
 
 const DashboardEditor = () => {
   const [playing, setPlaying] = useState(false);
