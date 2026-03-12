@@ -1,8 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor, Sparkles } from "lucide-react";
+import { LayoutDashboard, Upload, Scissors, FileText, Settings, LogOut, CreditCard, BarChart3, FolderOpen, Palette, Video, Shield, Menu, X, ChevronRight, Link2, PenTool, TrendingUp, Anchor } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { useRealtimeJobs, useRealtimeNotifications, useRealtimeClipsAndVideos } from "@/hooks/use-realtime";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
