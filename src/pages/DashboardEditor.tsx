@@ -180,6 +180,12 @@ const DashboardEditor = () => {
           </div>
 
           <Button className="w-full" size="sm">Salvar alterações</Button>
+
+          {/* AI Panels */}
+          <VideoSummary transcript="Exemplo de transcrição do vídeo para demonstração das funcionalidades de IA." />
+          <AutoChapters transcript="Exemplo de transcrição do vídeo." durationSeconds={totalDuration} />
+          <ViralMoments transcript="Exemplo de transcrição do vídeo." />
+          <DerivedContent title="Clip de exemplo" transcript="Exemplo de transcrição do vídeo para gerar conteúdos derivados." />
         </div>
       </div>
     </DashboardLayout>
