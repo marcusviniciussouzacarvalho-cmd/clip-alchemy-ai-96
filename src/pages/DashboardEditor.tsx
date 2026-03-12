@@ -119,8 +119,9 @@ const DashboardEditor = () => {
               </div>
             </div>
           </div>
+          {/* Retention Chart - below timeline */}
+          <RetentionChart transcript="Exemplo de transcrição do vídeo para análise de retenção." durationSeconds={totalDuration} />
         </div>
-
         {/* Tools sidebar */}
         <div className="space-y-3">
           <div className="venus-card p-4">
