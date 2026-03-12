@@ -10,6 +10,7 @@ import { ViralMoments } from "@/components/ai/ViralMoments";
 import { DerivedContent } from "@/components/ai/DerivedContent";
 import { RetentionChart } from "@/components/ai/RetentionChart";
 import { HookDetector } from "@/components/ai/HookDetector";
+import { ThumbnailGenerator } from "@/components/ai/ThumbnailGenerator";
 
 const DashboardEditor = () => {
   const [playing, setPlaying] = useState(false);
