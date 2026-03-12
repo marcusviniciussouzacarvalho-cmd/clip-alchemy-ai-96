@@ -12,10 +12,10 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <div className="hidden lg:flex flex-1 bg-foreground items-center justify-center">
-        <div className="text-background text-center px-12">
-          <div className="font-display text-3xl font-bold mb-4">VENUSCLIP</div>
-          <p className="text-background/60">Comece gratuitamente. Sem cartão de crédito.</p>
+      <div className="hidden lg:flex flex-1 bg-card border-r border-border items-center justify-center">
+        <div className="text-center px-12">
+          <div className="font-display text-3xl font-extrabold mb-4">VENUSCLIP</div>
+          <p className="text-muted-foreground">Comece gratuitamente. Sem cartão de crédito.</p>
         </div>
       </div>
 
@@ -25,7 +25,7 @@ const Signup = () => {
             <ArrowLeft size={16} /> Voltar
           </Link>
 
-          <h1 className="text-2xl font-bold mb-2">Criar conta</h1>
+          <h1 className="text-2xl font-extrabold mb-2">Criar conta</h1>
           <p className="text-sm text-muted-foreground mb-8">Comece a criar clips virais agora</p>
 
           <div className="space-y-4">
@@ -41,7 +41,9 @@ const Signup = () => {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" />
             </div>
-            <Button className="w-full" variant="default">Criar conta</Button>
+            <Button className="w-full" variant="default" asChild>
+              <Link to="/dashboard">Criar conta</Link>
+            </Button>
           </div>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">

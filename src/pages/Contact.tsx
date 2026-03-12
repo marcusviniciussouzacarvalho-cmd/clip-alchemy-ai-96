@@ -10,9 +10,9 @@ const Contact = () => (
     <Navbar />
     <div className="pt-32 pb-24">
       <div className="container max-w-lg">
-        <h1 className="text-3xl font-bold mb-2 text-center">Contato</h1>
+        <h1 className="text-3xl font-extrabold mb-2 text-center">Contato</h1>
         <p className="text-muted-foreground text-center mb-8">Fale com a equipe VenusClip</p>
-        <div className="space-y-4">
+        <div className="venus-card p-6 space-y-4">
           <div>
             <Label>Nome</Label>
             <Input placeholder="Seu nome" className="mt-1" />
