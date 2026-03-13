@@ -71,7 +71,7 @@ const DashboardUpload = () => {
       await processVideo.mutateAsync({ videoId: video.id, options });
 
       toast.success("Processamento iniciado!");
-      navigate("/dashboard");
+      navigate(`/dashboard/videos/${video.id}`);
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar vídeo");
     }
