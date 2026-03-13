@@ -413,9 +413,9 @@ const DashboardEditor = () => {
             {saving ? (
               <span className="flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Salvando...</span>
             ) : isDirty ? (
-              <span className="text-amber-400">● Não salvo</span>
+              <span className="text-destructive">● Não salvo</span>
             ) : lastSaved ? (
-              <span className="flex items-center gap-1 text-emerald-400"><Check size={10} /> Salvo</span>
+              <span className="flex items-center gap-1 text-primary"><Check size={10} /> Salvo</span>
             ) : null}
           </div>
 
