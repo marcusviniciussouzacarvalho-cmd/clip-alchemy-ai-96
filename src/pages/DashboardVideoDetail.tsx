@@ -8,10 +8,11 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Video, Play, Scissors, FileText, RefreshCw, Loader2, Clock, BarChart3, AlertCircle, ChevronRight, ExternalLink, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import VideoPlayer, { VideoPlayerRef } from "@/components/video/VideoPlayer";
 import { formatDuration, getVideoStatusInfo } from "@/lib/video-utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 const DashboardVideoDetail = () => {
   const { id } = useParams<{ id: string }>();
