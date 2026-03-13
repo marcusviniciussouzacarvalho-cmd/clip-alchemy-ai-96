@@ -509,14 +509,21 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          current_step: string | null
           description: string | null
           duration_seconds: number | null
+          error_message: string | null
+          external_video_id: string | null
           file_path: string | null
           file_size: number | null
           id: string
           language: string | null
+          progress: number | null
+          source_type: string | null
+          source_url: string | null
           status: string | null
           tags: string[] | null
+          thumbnail_url: string | null
           title: string
           updated_at: string
           user_id: string
@@ -524,14 +531,21 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string
+          current_step?: string | null
           description?: string | null
           duration_seconds?: number | null
+          error_message?: string | null
+          external_video_id?: string | null
           file_path?: string | null
           file_size?: number | null
           id?: string
           language?: string | null
+          progress?: number | null
+          source_type?: string | null
+          source_url?: string | null
           status?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -539,14 +553,21 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string
+          current_step?: string | null
           description?: string | null
           duration_seconds?: number | null
+          error_message?: string | null
+          external_video_id?: string | null
           file_path?: string | null
           file_size?: number | null
           id?: string
           language?: string | null
+          progress?: number | null
+          source_type?: string | null
+          source_url?: string | null
           status?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
           user_id?: string
