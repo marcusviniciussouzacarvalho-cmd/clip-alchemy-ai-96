@@ -92,8 +92,12 @@ const DashboardLibrary = () => {
                 onClick={() => navigate(`/dashboard/videos/${v.id}`)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-16 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                    <Play size={14} className="text-muted-foreground/40" />
+                  <div className="w-16 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0 overflow-hidden">
+                    {v.thumbnail_url ? (
+                      <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Play size={14} className="text-muted-foreground/40" />
+                    )}
                   </div>
                   <div>
                     <div className="text-sm font-bold">{v.title}</div>
