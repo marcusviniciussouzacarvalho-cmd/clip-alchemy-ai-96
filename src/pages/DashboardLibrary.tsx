@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Video, Scissors, Search, Play, Loader2, Upload, BarChart3, Clock } from "lucide-react";
 import { useState } from "react";
 import { useVideos, useClips } from "@/hooks/use-pipeline";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -12,6 +13,7 @@ const DashboardLibrary = () => {
   const { data: videos, isLoading: videosLoading } = useVideos();
   const { data: clips, isLoading: clipsLoading } = useClips();
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const filteredVideos = videos?.filter((v) =>
     v.title.toLowerCase().includes(search.toLowerCase())
@@ -87,6 +89,7 @@ const DashboardLibrary = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
                 className="flex items-center justify-between p-3 venus-card hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/dashboard/videos/${v.id}`)}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">

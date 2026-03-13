@@ -44,6 +44,8 @@ const AdminVideos = lazy(() => import("./pages/admin/AdminVideos"));
 const AdminJobs = lazy(() => import("./pages/admin/AdminJobs"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminErrors = lazy(() => import("./pages/admin/AdminErrors"));
+const DashboardVideoDetail = lazy(() => import("./pages/DashboardVideoDetail"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -88,6 +90,8 @@ const App = () => (
             <Route path="/dashboard/admin/jobs" element={<AdminRoute><AdminJobs /></AdminRoute>} />
             <Route path="/dashboard/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
             <Route path="/dashboard/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+            <Route path="/dashboard/admin/errors" element={<AdminRoute><AdminErrors /></AdminRoute>} />
+            <Route path="/dashboard/videos/:id" element={<ProtectedRoute><DashboardVideoDetail /></ProtectedRoute>} />
             <Route path="/dashboard/script" element={<ProtectedRoute><DashboardScriptGenerator /></ProtectedRoute>} />
             <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
             <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Users, Video, BarChart3, Activity, Settings, ArrowLeft } from "lucide-react";
+import { Users, Video, BarChart3, Activity, Settings, ArrowLeft, AlertCircle } from "lucide-react";
 
 const adminNav = [
   { icon: BarChart3, label: "Visão Geral", href: "/dashboard/admin" },
@@ -7,6 +7,7 @@ const adminNav = [
   { icon: Video, label: "Vídeos", href: "/dashboard/admin/videos" },
   { icon: Activity, label: "Jobs", href: "/dashboard/admin/jobs" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/admin/analytics" },
+  { icon: AlertCircle, label: "Erros", href: "/dashboard/admin/errors" },
   { icon: Settings, label: "Configurações", href: "/dashboard/admin/settings" },
 ];
 
