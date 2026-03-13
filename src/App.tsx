@@ -88,6 +88,8 @@ const App = () => (
             <Route path="/dashboard/admin/jobs" element={<AdminRoute><AdminJobs /></AdminRoute>} />
             <Route path="/dashboard/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
             <Route path="/dashboard/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+            <Route path="/dashboard/admin/errors" element={<AdminRoute><AdminErrors /></AdminRoute>} />
+            <Route path="/dashboard/videos/:id" element={<ProtectedRoute><DashboardVideoDetail /></ProtectedRoute>} />
             <Route path="/dashboard/script" element={<ProtectedRoute><DashboardScriptGenerator /></ProtectedRoute>} />
             <Route path="/dashboard/trends" element={<ProtectedRoute><DashboardTrends /></ProtectedRoute>} />
             <Route path="/dashboard/hooks" element={<ProtectedRoute><DashboardHooks /></ProtectedRoute>} />
