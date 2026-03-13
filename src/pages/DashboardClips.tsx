@@ -156,8 +156,19 @@ const DashboardClips = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 pt-1">
-                  <Button variant="default" size="sm" className="flex-1 h-8 text-xs">
-                    <Download size={12} className="mr-1" /> Exportar
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => exportClip(clip.id)}
+                    disabled={exporting === clip.id}
+                  >
+                    {exporting === clip.id ? (
+                      <Loader2 size={12} className="animate-spin mr-1" />
+                    ) : (
+                      <Download size={12} className="mr-1" />
+                    )}
+                    Exportar
                   </Button>
                   <Button variant="outline" size="sm" className="h-8 w-8 p-0"
                     onClick={() => navigate(`/dashboard/editor?video=${clip.video_id}`)}
