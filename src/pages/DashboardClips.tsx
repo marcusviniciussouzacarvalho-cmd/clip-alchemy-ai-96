@@ -1,6 +1,6 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Scissors, Download, Play, Heart, Trash2, Loader2, BarChart3, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Scissors, Download, Play, Heart, Trash2, BarChart3, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useClips, useToggleFavorite, useDeleteClip } from "@/hooks/use-pipeline";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -11,6 +11,7 @@ import { AdvancedVirality } from "@/components/ai/AdvancedVirality";
 import { ClipComparison } from "@/components/ai/ClipComparison";
 import { ThumbnailGenerator } from "@/components/ai/ThumbnailGenerator";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ScoreBar = ({ score }: { score: number }) => {
   const color = score >= 85 ? 'bg-emerald-400' : score >= 70 ? 'bg-amber-400' : 'bg-destructive';
@@ -58,6 +59,7 @@ const DashboardClips = () => {
   const toggleFav = useToggleFavorite();
   const deleteClip = useDeleteClip();
   const [expandedClip, setExpandedClip] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleDelete = (id: string) => {
     deleteClip.mutate(id, {
@@ -110,7 +112,6 @@ const DashboardClips = () => {
         </motion.div>
       ) : (
         <div className="space-y-4">
-          {/* Clip Comparison tool */}
           {clips && clips.length >= 2 && (
             <ClipComparison clips={clips} />
           )}
@@ -124,10 +125,12 @@ const DashboardClips = () => {
               transition={{ delay: i * 0.03 }}
               className="venus-card overflow-hidden group"
             >
-              <div className="aspect-video bg-accent flex items-center justify-center relative">
+              <div className="aspect-video bg-accent flex items-center justify-center relative cursor-pointer"
+                onClick={() => navigate(`/dashboard/editor?video=${clip.video_id}`)}
+              >
                 <Play size={28} className="text-muted-foreground/40 group-hover:text-foreground/60 transition-colors" />
                 <button
-                  onClick={() => toggleFav.mutate({ clipId: clip.id, isFavorite: !clip.is_favorite })}
+                  onClick={(e) => { e.stopPropagation(); toggleFav.mutate({ clipId: clip.id, isFavorite: !clip.is_favorite }); }}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/60 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Heart size={13} className={clip.is_favorite ? "fill-foreground text-foreground" : "text-muted-foreground"} />
@@ -154,8 +157,10 @@ const DashboardClips = () => {
                   <Button variant="default" size="sm" className="flex-1 h-8 text-xs">
                     <Download size={12} className="mr-1" /> Exportar
                   </Button>
-                  <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-                    <a href="/dashboard/editor"><Scissors size={12} /></a>
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0"
+                    onClick={() => navigate(`/dashboard/editor?video=${clip.video_id}`)}
+                  >
+                    <Scissors size={12} />
                   </Button>
                   <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(clip.id)}>
                     <Trash2 size={12} />

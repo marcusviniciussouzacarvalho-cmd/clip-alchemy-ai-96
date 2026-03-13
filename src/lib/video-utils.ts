@@ -64,9 +64,19 @@ export function getVideoStatusInfo(status: string | null): {
   switch (status) {
     case "ready":
     case "completed":
+    case "clips_ready":
       return { label: "Pronto", color: "bg-foreground text-background", canProcess: false, canPlay: true };
     case "processing":
+    case "transcribing":
+    case "analyzing":
+    case "generating_clips":
+    case "rendering":
+    case "queued":
       return { label: "Processando", color: "bg-accent text-muted-foreground animate-pulse", canProcess: false, canPlay: true };
+    case "validating_url":
+    case "fetching_metadata":
+    case "importing":
+      return { label: "Importando", color: "bg-accent text-muted-foreground animate-pulse", canProcess: false, canPlay: false };
     case "error":
     case "failed":
       return { label: "Erro", color: "bg-destructive/20 text-destructive-foreground", canProcess: true, canPlay: true };
