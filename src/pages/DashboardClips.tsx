@@ -1,7 +1,8 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Scissors, Download, Play, Heart, Trash2, BarChart3, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Scissors, Download, Play, Heart, Trash2, BarChart3, Clock, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useClips, useToggleFavorite, useDeleteClip } from "@/hooks/use-pipeline";
+import { useExportClip } from "@/hooks/use-export";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
