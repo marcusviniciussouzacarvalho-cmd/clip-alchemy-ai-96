@@ -73,7 +73,8 @@ const DashboardEditor = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Clip creation
+  // Clip creation & export
+  const { exportSelection, exporting: exportingId } = useExportClip();
   const [creatingClip, setCreatingClip] = useState(false);
 
   // Timeline drag
