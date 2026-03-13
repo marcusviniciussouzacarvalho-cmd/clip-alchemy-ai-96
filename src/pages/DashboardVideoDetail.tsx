@@ -8,10 +8,11 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Video, Play, Scissors, FileText, RefreshCw, Loader2, Clock, BarChart3, AlertCircle, ChevronRight, ExternalLink, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import VideoPlayer, { VideoPlayerRef } from "@/components/video/VideoPlayer";
 import { formatDuration, getVideoStatusInfo } from "@/lib/video-utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 const DashboardVideoDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,29 @@ const DashboardVideoDetail = () => {
   const reprocessJob = useReprocessJob();
   const navigate = useNavigate();
   const playerRef = useRef<VideoPlayerRef>(null);
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for this specific video's data
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`video-detail-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "videos", filter: `id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["video", id] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "processing_jobs", filter: `video_id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["jobs", id] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "clips", filter: `video_id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["clips", id] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "transcripts", filter: `video_id=eq.${id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["transcript", id] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [id, queryClient]);
 
   // Manual clip creation state
   const [showClipCreator, setShowClipCreator] = useState(false);
