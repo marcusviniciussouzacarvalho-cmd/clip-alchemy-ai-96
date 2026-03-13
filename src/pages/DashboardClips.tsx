@@ -59,6 +59,7 @@ const DashboardClips = () => {
   const { data: clips, isLoading } = useClips();
   const toggleFav = useToggleFavorite();
   const deleteClip = useDeleteClip();
+  const { exportClip, exporting } = useExportClip();
   const [expandedClip, setExpandedClip] = useState<string | null>(null);
   const navigate = useNavigate();
 
