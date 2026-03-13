@@ -1,12 +1,13 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Video, Scissors, Search, Play, Loader2, Upload, BarChart3, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Video, Scissors, Search, Play, Upload, BarChart3, Clock, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useVideos, useClips } from "@/hooks/use-pipeline";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Skeleton } from "@/components/ui/skeleton";
+import { getVideoStatusInfo, formatDuration } from "@/lib/video-utils";
 
 const DashboardLibrary = () => {
   const [tab, setTab] = useState<"videos" | "clips">("videos");
@@ -32,9 +33,14 @@ const DashboardLibrary = () => {
           <h1 className="text-2xl font-extrabold mb-1">Biblioteca</h1>
           <p className="text-sm text-muted-foreground">Seus vídeos e clips</p>
         </div>
-        <Button variant="default" size="sm" asChild>
-          <a href="/dashboard/upload"><Upload size={14} className="mr-1.5" /> Upload</a>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a href="/dashboard/import"><ExternalLink size={14} className="mr-1.5" /> YouTube</a>
+          </Button>
+          <Button variant="default" size="sm" asChild>
+            <a href="/dashboard/upload"><Upload size={14} className="mr-1.5" /> Upload</a>
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-1 mb-5 p-0.5 bg-accent rounded-lg w-fit">
@@ -60,13 +66,13 @@ const DashboardLibrary = () => {
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-4 p-3 venus-card">
-              <Skeleton className="w-16 h-10 rounded-lg" />
+            <div key={i} className="flex items-center gap-4 p-3 venus-card animate-pulse">
+              <div className="w-16 h-10 rounded-lg bg-accent" />
               <div className="flex-1 space-y-1">
-                <Skeleton className="h-3.5 w-48" />
-                <Skeleton className="h-2.5 w-24" />
+                <div className="h-3.5 w-48 bg-accent rounded" />
+                <div className="h-2.5 w-24 bg-accent rounded" />
               </div>
-              <Skeleton className="h-5 w-16 rounded-full" />
+              <div className="h-5 w-16 rounded-full bg-accent" />
             </div>
           ))}
         </div>
@@ -76,47 +82,56 @@ const DashboardLibrary = () => {
             <Video size={36} className="mx-auto mb-3 text-muted-foreground/30" />
             <h3 className="font-bold text-lg mb-1">Nenhum vídeo</h3>
             <p className="text-sm text-muted-foreground mb-4">Faça upload do seu primeiro vídeo</p>
-            <Button variant="outline" size="sm" asChild>
-              <a href="/dashboard/upload">Enviar vídeo</a>
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" size="sm" asChild>
+                <a href="/dashboard/upload">Enviar vídeo</a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a href="/dashboard/import">Importar do YouTube</a>
+              </Button>
+            </div>
           </motion.div>
         ) : (
           <div className="space-y-1.5">
-            {filteredVideos.map((v, i) => (
-              <motion.div
-                key={v.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="flex items-center justify-between p-3 venus-card hover:bg-accent/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/dashboard/videos/${v.id}`)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0 overflow-hidden">
-                    {v.thumbnail_url ? (
-                      <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <Play size={14} className="text-muted-foreground/40" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold">{v.title}</div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                      {v.category && <span>{v.category}</span>}
-                      <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
+            {filteredVideos.map((v, i) => {
+              const statusInfo = getVideoStatusInfo(v.status);
+              return (
+                <motion.div
+                  key={v.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-center justify-between p-3 venus-card hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/dashboard/videos/${v.id}`)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0 overflow-hidden">
+                      {v.thumbnail_url ? (
+                        <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <Play size={14} className="text-muted-foreground/40" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold">{v.title}</div>
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                        {v.source_type === "youtube" && (
+                          <span className="flex items-center gap-0.5"><ExternalLink size={9} /> YouTube</span>
+                        )}
+                        {v.duration_seconds && (
+                          <span className="flex items-center gap-0.5"><Clock size={9} /> {formatDuration(v.duration_seconds)}</span>
+                        )}
+                        {v.category && <span>{v.category}</span>}
+                        <span>{new Date(v.created_at).toLocaleDateString("pt-BR")}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                  v.status === "ready" ? "bg-foreground text-background" :
-                  v.status === "processing" ? "bg-accent text-muted-foreground animate-pulse-subtle" :
-                  v.status === "error" ? "bg-destructive/20 text-destructive-foreground" :
-                  "bg-accent text-muted-foreground"
-                }`}>
-                  {v.status === "ready" ? "Pronto" : v.status === "processing" ? "Processando" : v.status === "error" || v.status === "failed" ? "Erro" : "Enviado"}
-                </span>
-              </motion.div>
-            ))}
+                  <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
+                    {statusInfo.label}
+                  </Badge>
+                </motion.div>
+              );
+            })}
           </div>
         )
       ) : (
@@ -134,14 +149,15 @@ const DashboardLibrary = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="venus-card overflow-hidden group"
+                className="venus-card overflow-hidden group cursor-pointer"
+                onClick={() => navigate(`/dashboard/editor?video=${clip.video_id}`)}
               >
                 <div className="aspect-video bg-accent flex items-center justify-center relative">
                   <Play size={24} className="text-muted-foreground/30 group-hover:text-foreground/50 transition-colors" />
                   {clip.duration_seconds && (
                     <span className="absolute bottom-2 right-2 text-[10px] bg-background/80 backdrop-blur px-1.5 py-0.5 rounded flex items-center gap-1">
                       <Clock size={9} />
-                      {Math.floor(clip.duration_seconds / 60)}:{Math.floor(clip.duration_seconds % 60).toString().padStart(2, "0")}
+                      {Math.floor(Number(clip.duration_seconds) / 60)}:{Math.floor(Number(clip.duration_seconds) % 60).toString().padStart(2, "0")}
                     </span>
                   )}
                 </div>
