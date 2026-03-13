@@ -766,7 +766,16 @@ const DashboardEditor = () => {
           <div className="flex gap-2">
             <Button className="flex-1" size="sm" onClick={handleCreateClip} disabled={creatingClip}>
               {creatingClip ? <Loader2 size={14} className="animate-spin mr-1" /> : <Scissors size={14} className="mr-1" />}
-              Criar clip do trecho selecionado
+              Criar clip
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => videoId && exportSelection(videoId, editorState.startTime, editorState.endTime, editorState.format)}
+              disabled={!!exportingId}
+            >
+              {exportingId ? <Loader2 size={14} className="animate-spin mr-1" /> : <Download size={14} className="mr-1" />}
+              Exportar
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={!isDirty}>
               <Save size={14} className="mr-1" /> Salvar
