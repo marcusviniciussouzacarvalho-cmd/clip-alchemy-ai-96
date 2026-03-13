@@ -59,7 +59,11 @@ const DashboardImport = () => {
       });
       if (error) throw error;
       toast.success("Vídeo importado! Processamento iniciado.");
-      navigate("/dashboard");
+      if (data?.video?.id) {
+        navigate(`/dashboard/videos/${data.video.id}`);
+      } else {
+        navigate("/dashboard/library");
+      }
     } catch (err: any) {
       toast.error(err.message || "Erro ao importar");
       setStep("preview");
