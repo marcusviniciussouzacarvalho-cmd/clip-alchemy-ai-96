@@ -1,11 +1,16 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2, Send, Loader2, Sparkles, Bot, User, Scissors, RotateCcw, RotateCw } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2, Send, Loader2, Sparkles, Bot, User, Scissors, RotateCcw, RotateCw, Video, ChevronLeft } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useSearchParams, Link } from "react-router-dom";
+import { useVideo, useClips, useTranscript } from "@/hooks/use-pipeline";
+import VideoPlayer, { VideoPlayerRef } from "@/components/video/VideoPlayer";
+import { formatDuration } from "@/lib/video-utils";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -24,11 +29,17 @@ const QUICK_SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editor-chat`;
 
 const DashboardEditor = () => {
-  const [playing, setPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(5);
-  const [startTime, setStartTime] = useState("00:05");
-  const [endTime, setEndTime] = useState("00:58");
-  const totalDuration = 75;
+  const [searchParams] = useSearchParams();
+  const videoId = searchParams.get("video") || undefined;
+  const { data: video, isLoading: videoLoading } = useVideo(videoId);
+  const { data: clips } = useClips(videoId);
+  const { data: transcript } = useTranscript(videoId);
+
+  const playerRef = useRef<VideoPlayerRef>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(0);
+  const [startTime, setStartTime] = useState("00:00");
+  const [endTime, setEndTime] = useState("00:30");
   const [format, setFormat] = useState("9:16");
   const [captionColor, setCaptionColor] = useState("#FFFFFF");
   const [captionStyle, setCaptionStyle] = useState("Bold Centered");
@@ -54,6 +65,12 @@ const DashboardEditor = () => {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const parseTime = (str: string): number => {
+    const parts = str.split(":").map(Number);
+    if (parts.length === 2) return (parts[0] || 0) * 60 + (parts[1] || 0);
+    return 0;
+  };
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || chatLoading) return;
 
@@ -74,7 +91,7 @@ const DashboardEditor = () => {
         },
         body: JSON.stringify({
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          context: { format, currentTime, totalDuration, captionColor, captionStyle },
+          context: { format, currentTime, totalDuration, captionColor, captionStyle, videoTitle: video?.title },
         }),
       });
 
@@ -120,7 +137,6 @@ const DashboardEditor = () => {
         }
       }
 
-      // Save to undo history
       setHistory(prev => [...prev.slice(0, historyIndex + 1), assistantSoFar]);
       setHistoryIndex(prev => prev + 1);
     } catch (e: any) {
@@ -129,14 +145,46 @@ const DashboardEditor = () => {
     } finally {
       setChatLoading(false);
     }
-  }, [messages, chatLoading, format, currentTime, totalDuration, captionColor, captionStyle, historyIndex]);
+  }, [messages, chatLoading, format, currentTime, totalDuration, captionColor, captionStyle, historyIndex, video?.title]);
+
+  // No video selected state
+  if (!videoId) {
+    return (
+      <DashboardLayout>
+        <div className="venus-card p-12 text-center">
+          <Video size={36} className="mx-auto mb-3 text-muted-foreground/30" />
+          <h3 className="font-bold text-lg mb-1">Nenhum vídeo selecionado</h3>
+          <p className="text-sm text-muted-foreground mb-4">Abra um vídeo na biblioteca para editá-lo</p>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/dashboard/library">Ir para a biblioteca</Link>
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (videoLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="aspect-video w-full rounded-xl" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="mb-5 flex items-center justify-between">
         <div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+            <Link to={`/dashboard/videos/${videoId}`} className="hover:text-foreground transition-colors flex items-center gap-1">
+              <ChevronLeft size={12} /> Voltar ao vídeo
+            </Link>
+          </div>
           <h1 className="text-2xl font-extrabold mb-1">Editor de Clip</h1>
-          <p className="text-sm text-muted-foreground">Edite e personalize seu clip</p>
+          <p className="text-sm text-muted-foreground truncate max-w-md">{video?.title || "Editando"}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-7" disabled={historyIndex < 0} onClick={() => setHistoryIndex(i => Math.max(0, i - 1))}>
@@ -154,27 +202,22 @@ const DashboardEditor = () => {
       <div className="flex gap-4">
         {/* Main editor area */}
         <div className={`flex-1 ${chatOpen ? "lg:flex-[3]" : ""} space-y-3`}>
-          {/* Player */}
-          <div className="venus-card overflow-hidden">
-            <div className="aspect-video bg-accent flex items-center justify-center relative">
-              <button onClick={() => setPlaying(!playing)} className="w-14 h-14 rounded-full bg-foreground/90 flex items-center justify-center hover:bg-foreground transition-colors hover:scale-105 active:scale-95">
-                {playing ? <Pause size={20} className="text-background" /> : <Play size={20} className="text-background ml-0.5" />}
-              </button>
-              <span className="absolute top-3 right-3 text-[10px] bg-background/80 backdrop-blur px-2 py-0.5 rounded font-medium">{format}</span>
+          {/* Real Video Player */}
+          {video && (
+            <div className="venus-card overflow-hidden">
+              <VideoPlayer
+                ref={playerRef}
+                video={video}
+                onTimeUpdate={setCurrentTime}
+                onDurationChange={(d) => {
+                  setTotalDuration(d);
+                  setEndTime(formatTime(Math.min(30, d)));
+                }}
+                startTime={parseTime(startTime)}
+                endTime={parseTime(endTime)}
+              />
             </div>
-            <div className="px-4 py-3 bg-card border-t border-border">
-              <div className="flex items-center gap-3">
-                <button className="text-muted-foreground hover:text-foreground"><SkipBack size={14} /></button>
-                <button onClick={() => setPlaying(!playing)} className="text-foreground">{playing ? <Pause size={16} /> : <Play size={16} />}</button>
-                <button className="text-muted-foreground hover:text-foreground"><SkipForward size={14} /></button>
-                <span className="text-[11px] text-muted-foreground tabular-nums">{formatTime(currentTime)} / {formatTime(totalDuration)}</span>
-                <div className="flex-1 h-1 rounded-full bg-accent overflow-hidden cursor-pointer group">
-                  <div className="h-full rounded-full bg-foreground" style={{ width: `${(currentTime / totalDuration) * 100}%` }} />
-                </div>
-                <button className="text-muted-foreground hover:text-foreground"><Volume2 size={14} /></button>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Timeline */}
           <div className="venus-card p-4">
@@ -183,26 +226,75 @@ const DashboardEditor = () => {
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Timeline</span>
               <span className="text-[11px] text-muted-foreground tabular-nums">{formatTime(totalDuration)}</span>
             </div>
-            <div className="h-12 bg-accent rounded-lg relative overflow-hidden mb-3">
+            <div className="h-12 bg-accent rounded-lg relative overflow-hidden mb-3 cursor-pointer"
+              onClick={(e) => {
+                if (!totalDuration) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = (e.clientX - rect.left) / rect.width;
+                const time = pct * totalDuration;
+                playerRef.current?.seekTo(time);
+              }}
+            >
+              {/* Waveform bars */}
               <div className="absolute inset-0 flex items-center px-1">
                 {Array.from({ length: 60 }).map((_, i) => (
                   <div key={i} className="flex-1 mx-px bg-muted-foreground/20 rounded-sm" style={{ height: `${20 + Math.sin(i * 0.5) * 30 + Math.random() * 20}%` }} />
                 ))}
               </div>
-              <div className="absolute inset-y-0 left-[10%] right-[20%] bg-foreground/10 border-x-2 border-foreground rounded">
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground rounded-l cursor-col-resize" />
-                <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-foreground rounded-r cursor-col-resize" />
-              </div>
-              <motion.div className="absolute top-0 bottom-0 w-0.5 bg-foreground z-10" style={{ left: `${(currentTime / totalDuration) * 100}%` }} />
+
+              {/* Selection range */}
+              {totalDuration > 0 && (
+                <div
+                  className="absolute inset-y-0 bg-foreground/10 border-x-2 border-foreground rounded"
+                  style={{
+                    left: `${(parseTime(startTime) / totalDuration) * 100}%`,
+                    width: `${((parseTime(endTime) - parseTime(startTime)) / totalDuration) * 100}%`,
+                  }}
+                >
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground rounded-l cursor-col-resize" />
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-foreground rounded-r cursor-col-resize" />
+                </div>
+              )}
+
+              {/* Playhead */}
+              {totalDuration > 0 && (
+                <motion.div
+                  className="absolute top-0 bottom-0 w-0.5 bg-foreground z-10"
+                  style={{ left: `${(currentTime / totalDuration) * 100}%` }}
+                />
+              )}
+
+              {/* Clip markers */}
+              {clips?.map((clip) => (
+                <div
+                  key={clip.id}
+                  className="absolute top-0 h-1 bg-primary/60 rounded-full"
+                  style={{
+                    left: `${totalDuration > 0 ? (Number(clip.start_time) / totalDuration) * 100 : 0}%`,
+                    width: `${totalDuration > 0 ? ((Number(clip.end_time) - Number(clip.start_time)) / totalDuration) * 100 : 0}%`,
+                  }}
+                  title={clip.title}
+                />
+              ))}
             </div>
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Início</label>
-                <Input value={startTime} onChange={e => setStartTime(e.target.value)} className="mt-1 h-7 text-xs" />
+                <div className="flex gap-1 mt-1">
+                  <Input value={startTime} onChange={e => setStartTime(e.target.value)} className="h-7 text-xs" />
+                  <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => setStartTime(formatTime(currentTime))}>
+                    Marcar
+                  </Button>
+                </div>
               </div>
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Fim</label>
-                <Input value={endTime} onChange={e => setEndTime(e.target.value)} className="mt-1 h-7 text-xs" />
+                <div className="flex gap-1 mt-1">
+                  <Input value={endTime} onChange={e => setEndTime(e.target.value)} className="h-7 text-xs" />
+                  <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => setEndTime(formatTime(currentTime))}>
+                    Marcar
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -255,6 +347,31 @@ const DashboardEditor = () => {
               </div>
             </div>
           </div>
+
+          {/* Transcript segments - clickable */}
+          {transcript?.transcript_segments && transcript.transcript_segments.length > 0 && (
+            <div className="venus-card p-4">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">Transcrição</h3>
+              <div className="max-h-32 overflow-y-auto space-y-0.5">
+                {transcript.transcript_segments.map((seg: any) => (
+                  <button
+                    key={seg.id}
+                    className={`flex items-start gap-2 text-xs w-full text-left px-1.5 py-1 rounded transition-colors ${
+                      currentTime >= seg.start_time && currentTime < seg.end_time
+                        ? "bg-foreground/10 text-foreground"
+                        : "hover:bg-accent/50 text-muted-foreground"
+                    }`}
+                    onClick={() => playerRef.current?.seekTo(seg.start_time)}
+                  >
+                    <span className="text-muted-foreground/60 tabular-nums w-8 shrink-0 text-[10px]">
+                      {formatTime(seg.start_time)}
+                    </span>
+                    <span>{seg.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Button className="w-full" size="sm" onClick={() => toast.success("Alterações salvas!")}>Salvar alterações</Button>
         </div>
