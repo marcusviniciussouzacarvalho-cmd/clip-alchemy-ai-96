@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Video, Scissors, Search, Play, Loader2, Upload, BarChart3, Clock } from "lucide-react";
 import { useState } from "react";
 import { useVideos, useClips } from "@/hooks/use-pipeline";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
