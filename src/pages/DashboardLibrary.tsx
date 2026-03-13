@@ -13,6 +13,7 @@ const DashboardLibrary = () => {
   const { data: videos, isLoading: videosLoading } = useVideos();
   const { data: clips, isLoading: clipsLoading } = useClips();
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const filteredVideos = videos?.filter((v) =>
     v.title.toLowerCase().includes(search.toLowerCase())
