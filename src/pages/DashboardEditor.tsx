@@ -13,6 +13,7 @@ import { useVideo, useClips, useTranscript } from "@/hooks/use-pipeline";
 import VideoPlayer, { VideoPlayerRef } from "@/components/video/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useExportClip } from "@/hooks/use-export";
 
 interface ChatMessage {
   role: "user" | "assistant";
