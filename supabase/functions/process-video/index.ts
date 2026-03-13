@@ -36,16 +36,15 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     if (req.method === "POST") {
       const { video_id, options } = (await req.json()) as ProcessRequest;
@@ -80,7 +79,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (!credits || credits.balance < 10) {
-        return new Response(JSON.stringify({ error: "Insufficient credits" }), {
+        return new Response(JSON.stringify({ error: "Créditos insuficientes (mínimo: 10)" }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -120,9 +119,23 @@ Deno.serve(async (req) => {
         metadata: { video_id, options },
       });
 
-      // Simulate async processing pipeline
-      // In production, this would trigger a background worker
-      processVideoAsync(supabase, job.id, video_id, userId, options);
+      // Use service role for background processing so RLS doesn't block updates
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      // Run pipeline in background
+      EdgeRuntime.waitUntil(
+        processVideoAsync(serviceClient, job.id, video_id, userId, options).catch(async (err) => {
+          await serviceClient.from("processing_jobs").update({
+            status: "failed",
+            current_step: "Falha no processamento",
+            error_message: err.message,
+          }).eq("id", job.id);
+          await serviceClient.from("videos").update({ status: "error", error_message: err.message }).eq("id", video_id);
+        })
+      );
 
       return new Response(JSON.stringify({ job }), {
         status: 201,
@@ -149,26 +162,16 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (videoId) {
-        const { data: jobs } = await supabase
-          .from("processing_jobs")
-          .select("*")
-          .eq("video_id", videoId)
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-
-        return new Response(JSON.stringify({ jobs }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       // All jobs for user
-      const { data: jobs } = await supabase
+      let query = supabase
         .from("processing_jobs")
         .select("*")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .order("created_at", { ascending: false });
+
+      if (videoId) query = query.eq("video_id", videoId);
+
+      const { data: jobs } = await query.limit(20);
 
       return new Response(JSON.stringify({ jobs }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -186,14 +189,13 @@ Deno.serve(async (req) => {
         .eq("user_id", userId)
         .single();
 
-      if (!existingJob || existingJob.status !== "failed") {
-        return new Response(JSON.stringify({ error: "Job not found or not in failed state" }), {
+      if (!existingJob || (existingJob.status !== "failed" && existingJob.status !== "queued")) {
+        return new Response(JSON.stringify({ error: "Job not found or not reprocessable" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Reset job
       const { data: job } = await supabase
         .from("processing_jobs")
         .update({ status: "queued", progress: 0, current_step: "Reprocessando", error_message: null })
@@ -207,7 +209,19 @@ Deno.serve(async (req) => {
         message: "Job reprocessado pelo usuário",
       });
 
-      processVideoAsync(supabase, job_id, existingJob.video_id, userId, existingJob.options);
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      EdgeRuntime.waitUntil(
+        processVideoAsync(serviceClient, job_id, existingJob.video_id, userId, existingJob.options).catch(async (err) => {
+          await serviceClient.from("processing_jobs").update({
+            status: "failed",
+            error_message: err.message,
+          }).eq("id", job_id);
+        })
+      );
 
       return new Response(JSON.stringify({ job }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -226,7 +240,6 @@ Deno.serve(async (req) => {
   }
 });
 
-// Simulated async processing pipeline
 async function processVideoAsync(
   supabase: any,
   jobId: string,
@@ -244,154 +257,147 @@ async function processVideoAsync(
     { status: "rendering", step: "Aplicando legendas", progress: 95 },
   ];
 
-  try {
-    // Update video status
-    await supabase.from("videos").update({ status: "processing" }).eq("id", videoId);
+  // Update video status
+  await supabase.from("videos").update({ status: "processing", progress: 0, current_step: "Processando" }).eq("id", videoId);
 
-    for (const step of steps) {
-      await new Promise((resolve) => setTimeout(resolve, 2000 + Math.random() * 3000));
+  for (const step of steps) {
+    await new Promise((resolve) => setTimeout(resolve, 2000 + Math.random() * 2000));
 
-      await supabase
-        .from("processing_jobs")
-        .update({
-          status: step.status,
-          progress: step.progress,
-          current_step: step.step,
-          started_at: step.progress === 10 ? new Date().toISOString() : undefined,
-        })
-        .eq("id", jobId);
-
-      await supabase.from("job_logs").insert({
-        job_id: jobId,
-        level: "info",
-        message: step.step,
-        metadata: { progress: step.progress },
-      });
-    }
-
-    // Generate transcript
-    if (options?.generate_transcript !== false) {
-      const { data: transcript } = await supabase
-        .from("transcripts")
-        .insert({
-          video_id: videoId,
-          user_id: userId,
-          full_text: generateMockTranscript(),
-          language: "pt",
-        })
-        .select()
-        .single();
-
-      if (transcript) {
-        const segments = generateMockSegments(transcript.id);
-        await supabase.from("transcript_segments").insert(segments);
-      }
-    }
-
-    // Generate clips
-    if (options?.generate_clips !== false) {
-      const clipCount = 3 + Math.floor(Math.random() * 8); // 3-10 clips
-      const clips = [];
-
-      for (let i = 0; i < clipCount; i++) {
-        const startTime = Math.random() * 1800; // up to 30 min
-        const duration = 20 + Math.random() * 70; // 20-90 seconds
-
-        clips.push({
-          video_id: videoId,
-          user_id: userId,
-          title: generateClipTitle(i),
-          start_time: Math.round(startTime * 100) / 100,
-          end_time: Math.round((startTime + duration) * 100) / 100,
-          virality_score: 50 + Math.floor(Math.random() * 50),
-          virality_details: {
-            hook_strength: 40 + Math.floor(Math.random() * 60),
-            emotion: 40 + Math.floor(Math.random() * 60),
-            pacing: 40 + Math.floor(Math.random() * 60),
-            retention: 40 + Math.floor(Math.random() * 60),
-          },
-          transcript_text: `Trecho transcrito do clip ${i + 1}...`,
-          format: "9:16",
-          status: "generated",
-        });
-      }
-
-      const { data: insertedClips } = await supabase.from("clips").insert(clips).select();
-
-      // Generate captions for each clip
-      if (options?.generate_captions !== false && insertedClips) {
-        for (const clip of insertedClips) {
-          const captions = generateMockCaptions(clip.id, userId, clip.start_time, clip.end_time);
-          await supabase.from("captions").insert(captions);
-        }
-      }
-    }
-
-    // Deduct credits
-    const creditCost = 30 + Math.floor(Math.random() * 20);
-    const { data: currentCredits } = await supabase
-      .from("credits")
-      .select("balance, total_used")
-      .eq("user_id", userId)
-      .single();
-
-    if (currentCredits) {
-      await supabase
-        .from("credits")
-        .update({
-          balance: Math.max(0, currentCredits.balance - creditCost),
-          total_used: currentCredits.total_used + creditCost,
-        })
-        .eq("user_id", userId);
-    }
-
-    await supabase.from("credit_transactions").insert({
-      user_id: userId,
-      amount: -creditCost,
-      description: `Processamento de vídeo`,
-      job_id: jobId,
-    });
-
-    // Mark completed
     await supabase
       .from("processing_jobs")
       .update({
-        status: "completed",
-        progress: 100,
-        current_step: "Concluído",
-        completed_at: new Date().toISOString(),
+        status: step.status,
+        progress: step.progress,
+        current_step: step.step,
+        started_at: step.progress === 10 ? new Date().toISOString() : undefined,
       })
       .eq("id", jobId);
 
-    await supabase.from("videos").update({ status: "ready" }).eq("id", videoId);
+    await supabase.from("videos").update({ progress: step.progress, current_step: step.step }).eq("id", videoId);
 
     await supabase.from("job_logs").insert({
       job_id: jobId,
       level: "info",
-      message: "Processamento concluído com sucesso",
+      message: step.step,
+      metadata: { progress: step.progress },
     });
-  } catch (error) {
-    await supabase
-      .from("processing_jobs")
-      .update({
-        status: "failed",
-        current_step: "Falha no processamento",
-        error_message: error.message,
-      })
-      .eq("id", jobId);
-
-    await supabase.from("job_logs").insert({
-      job_id: jobId,
-      level: "error",
-      message: `Erro: ${error.message}`,
-    });
-
-    await supabase.from("videos").update({ status: "error" }).eq("id", videoId);
   }
+
+  // Generate transcript
+  if (options?.generate_transcript !== false) {
+    const { data: transcript } = await supabase
+      .from("transcripts")
+      .insert({
+        video_id: videoId,
+        user_id: userId,
+        full_text: generateMockTranscript(),
+        language: "pt",
+      })
+      .select()
+      .single();
+
+    if (transcript) {
+      const segments = generateMockSegments(transcript.id);
+      await supabase.from("transcript_segments").insert(segments);
+    }
+  }
+
+  // Generate clips
+  if (options?.generate_clips !== false) {
+    const clipCount = 3 + Math.floor(Math.random() * 5);
+    const clips = [];
+
+    for (let i = 0; i < clipCount; i++) {
+      const startTime = Math.random() * 600;
+      const duration = 20 + Math.random() * 50;
+
+      clips.push({
+        video_id: videoId,
+        user_id: userId,
+        title: generateClipTitle(i),
+        start_time: Math.round(startTime * 100) / 100,
+        end_time: Math.round((startTime + duration) * 100) / 100,
+        duration_seconds: Math.round(duration * 100) / 100,
+        virality_score: 50 + Math.floor(Math.random() * 50),
+        virality_details: {
+          hook_strength: 40 + Math.floor(Math.random() * 60),
+          emotion: 40 + Math.floor(Math.random() * 60),
+          pacing: 40 + Math.floor(Math.random() * 60),
+          retention: 40 + Math.floor(Math.random() * 60),
+        },
+        transcript_text: `Trecho transcrito do clip ${i + 1}...`,
+        format: "9:16",
+        status: "generated",
+      });
+    }
+
+    const { data: insertedClips } = await supabase.from("clips").insert(clips).select();
+
+    if (options?.generate_captions !== false && insertedClips) {
+      for (const clip of insertedClips) {
+        const captions = generateMockCaptions(clip.id, userId, clip.start_time, clip.end_time);
+        await supabase.from("captions").insert(captions);
+      }
+    }
+  }
+
+  // Deduct credits
+  const creditCost = 20 + Math.floor(Math.random() * 20);
+  const { data: currentCredits } = await supabase
+    .from("credits")
+    .select("balance, total_used")
+    .eq("user_id", userId)
+    .single();
+
+  if (currentCredits) {
+    await supabase
+      .from("credits")
+      .update({
+        balance: Math.max(0, currentCredits.balance - creditCost),
+        total_used: currentCredits.total_used + creditCost,
+      })
+      .eq("user_id", userId);
+  }
+
+  await supabase.from("credit_transactions").insert({
+    user_id: userId,
+    amount: -creditCost,
+    description: `Processamento de vídeo`,
+    job_id: jobId,
+  });
+
+  // Mark completed
+  await supabase
+    .from("processing_jobs")
+    .update({
+      status: "completed",
+      progress: 100,
+      current_step: "Concluído",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", jobId);
+
+  await supabase.from("videos").update({ status: "ready", progress: 100, current_step: "Concluído" }).eq("id", videoId);
+
+  // Create notification
+  await supabase.from("notifications").insert({
+    user_id: userId,
+    title: "Processamento concluído",
+    message: "Seu vídeo foi processado com sucesso. Clips estão prontos!",
+    type: "processing",
+    related_entity_type: "video",
+    related_entity_id: videoId,
+  });
+
+  await supabase.from("job_logs").insert({
+    job_id: jobId,
+    level: "info",
+    message: "Processamento concluído com sucesso",
+  });
 }
 
 function generateMockTranscript(): string {
-  return `Olá a todos, sejam bem-vindos ao nosso episódio de hoje. Vamos falar sobre um tema muito importante que tem impactado o mercado digital. Primeiro, quero compartilhar uma história incrível de sucesso. Na semana passada, um dos nossos clientes conseguiu triplicar o engajamento nas redes sociais usando técnicas simples de conteúdo. A chave foi entender o que realmente funciona: ganchos fortes, storytelling e chamadas para ação claras. Vamos explorar cada um desses pontos em detalhes...`;
+  return `Olá a todos, sejam bem-vindos ao nosso episódio de hoje. Vamos falar sobre um tema muito importante que tem impactado o mercado digital. Primeiro, quero compartilhar uma história incrível de sucesso. Na semana passada, um dos nossos clientes conseguiu triplicar o engajamento nas redes sociais usando técnicas simples de conteúdo. A chave foi entender o que realmente funciona: ganchos fortes, storytelling e chamadas para ação claras. Vamos explorar cada um desses pontos em detalhes. O primeiro ponto é sobre criar ganchos que prendem a atenção nos primeiros 3 segundos. Isso é fundamental para qualquer plataforma de vídeo curto. O segundo ponto é sobre storytelling - contar histórias que conectam emocionalmente com o público. E o terceiro ponto é sobre CTAs efetivos que convertem visualizações em ações reais.`;
 }
 
 function generateMockSegments(transcriptId: string) {
@@ -402,6 +408,10 @@ function generateMockSegments(transcriptId: string) {
     "Na semana passada, um dos nossos clientes conseguiu triplicar o engajamento.",
     "A chave foi entender o que realmente funciona: ganchos fortes, storytelling e CTAs claras.",
     "Vamos explorar cada um desses pontos em detalhes.",
+    "O primeiro ponto é sobre criar ganchos que prendem a atenção nos primeiros 3 segundos.",
+    "Isso é fundamental para qualquer plataforma de vídeo curto.",
+    "O segundo ponto é sobre storytelling - contar histórias que conectam.",
+    "E o terceiro ponto é sobre CTAs efetivos que convertem visualizações em ações.",
   ];
 
   return texts.map((text, i) => ({
@@ -423,8 +433,6 @@ function generateClipTitle(index: number): string {
     "Momento emocional do episódio",
     "Hack de conteúdo viral",
     "Conclusão poderosa",
-    "Debate sobre estratégias",
-    "Insight sobre o mercado",
   ];
   return titles[index % titles.length];
 }
