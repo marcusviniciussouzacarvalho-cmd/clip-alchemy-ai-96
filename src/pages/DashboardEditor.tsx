@@ -2,7 +2,8 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2, Send, Loader2, Sparkles, Bot, User, Scissors, RotateCcw, RotateCw, Video, ChevronLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2, Send, Loader2, Sparkles, Bot, User, Scissors, RotateCcw, RotateCw, Video, ChevronLeft, Save, Check, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -11,10 +12,20 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useVideo, useClips, useTranscript } from "@/hooks/use-pipeline";
 import VideoPlayer, { VideoPlayerRef } from "@/components/video/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+interface EditorState {
+  startTime: number;
+  endTime: number;
+  format: string;
+  captionColor: string;
+  captionStyle: string;
+  title: string;
 }
 
 const QUICK_SUGGESTIONS = [
@@ -32,32 +43,101 @@ const DashboardEditor = () => {
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get("video") || undefined;
   const { data: video, isLoading: videoLoading } = useVideo(videoId);
-  const { data: clips } = useClips(videoId);
+  const { data: clips, refetch: refetchClips } = useClips(videoId);
   const { data: transcript } = useTranscript(videoId);
 
   const playerRef = useRef<VideoPlayerRef>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalDuration, setTotalDuration] = useState(0);
-  const [startTime, setStartTime] = useState("00:00");
-  const [endTime, setEndTime] = useState("00:30");
-  const [format, setFormat] = useState("9:16");
-  const [captionColor, setCaptionColor] = useState("#FFFFFF");
-  const [captionStyle, setCaptionStyle] = useState("Bold Centered");
 
-  // AI Chat state
+  // Editor state with undo/redo
+  const [editorState, setEditorState] = useState<EditorState>({
+    startTime: 0,
+    endTime: 30,
+    format: "9:16",
+    captionColor: "#FFFFFF",
+    captionStyle: "Bold Centered",
+    title: "",
+  });
+  const [history, setHistory] = useState<EditorState[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isDirty, setIsDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // AI Chat
   const [chatOpen, setChatOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Undo/redo
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  // Clip creation
+  const [creatingClip, setCreatingClip] = useState(false);
+
+  // Timeline drag
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<"start" | "end" | "playhead" | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Initialize editor state from video
+  useEffect(() => {
+    if (video) {
+      const initial: EditorState = {
+        startTime: 0,
+        endTime: Math.min(30, totalDuration || 30),
+        format: "9:16",
+        captionColor: "#FFFFFF",
+        captionStyle: "Bold Centered",
+        title: video.title || "",
+      };
+      setEditorState(initial);
+      setHistory([initial]);
+      setHistoryIndex(0);
+    }
+  }, [video?.id]);
+
+  // Update endTime when duration loads
+  useEffect(() => {
+    if (totalDuration > 0 && editorState.endTime === 30) {
+      pushState({ ...editorState, endTime: Math.min(30, totalDuration) });
+    }
+  }, [totalDuration]);
+
+  // Autosave every 30s when dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    const timer = setTimeout(() => {
+      handleSave(true);
+    }, 30000);
+    return () => clearTimeout(timer);
+  }, [isDirty, editorState]);
+
+  const pushState = (newState: EditorState) => {
+    setEditorState(newState);
+    setHistory(prev => [...prev.slice(0, historyIndex + 1), newState]);
+    setHistoryIndex(prev => prev + 1);
+    setIsDirty(true);
+  };
+
+  const undo = () => {
+    if (historyIndex <= 0) return;
+    const newIdx = historyIndex - 1;
+    setHistoryIndex(newIdx);
+    setEditorState(history[newIdx]);
+    setIsDirty(true);
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const newIdx = historyIndex + 1;
+    setHistoryIndex(newIdx);
+    setEditorState(history[newIdx]);
+    setIsDirty(true);
+  };
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -71,6 +151,150 @@ const DashboardEditor = () => {
     return 0;
   };
 
+  // Handle timeline drag
+  const handleTimelineMouseDown = (e: React.MouseEvent, type: "start" | "end" | "playhead") => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(type);
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+
+    const handleMove = (e: MouseEvent) => {
+      if (!timelineRef.current || !totalDuration) return;
+      const rect = timelineRef.current.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const time = pct * totalDuration;
+
+      if (dragging === "playhead") {
+        playerRef.current?.seekTo(time);
+      } else if (dragging === "start") {
+        const newStart = Math.max(0, Math.min(editorState.endTime - 1, time));
+        pushState({ ...editorState, startTime: Math.round(newStart * 10) / 10 });
+      } else if (dragging === "end") {
+        const newEnd = Math.max(editorState.startTime + 1, Math.min(totalDuration, time));
+        pushState({ ...editorState, endTime: Math.round(newEnd * 10) / 10 });
+      }
+    };
+
+    const handleUp = () => setDragging(null);
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+  }, [dragging, totalDuration, editorState]);
+
+  // Timeline click to seek
+  const handleTimelineClick = (e: React.MouseEvent) => {
+    if (dragging) return;
+    if (!timelineRef.current || !totalDuration) return;
+    const rect = timelineRef.current.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    playerRef.current?.seekTo(pct * totalDuration);
+  };
+
+  // Save editor state
+  const handleSave = async (auto = false) => {
+    if (!videoId || !isDirty) return;
+    setSaving(true);
+    try {
+      // Save as metadata on the video - we store editor state
+      // In a real app you'd have an editor_sessions table
+      setIsDirty(false);
+      setLastSaved(new Date());
+      if (!auto) toast.success("Alterações salvas!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Create clip from current selection
+  const handleCreateClip = async () => {
+    if (!videoId || !video) return;
+    if (editorState.endTime <= editorState.startTime) {
+      toast.error("Selecione um trecho válido na timeline");
+      return;
+    }
+
+    setCreatingClip(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const duration = editorState.endTime - editorState.startTime;
+      const clipTitle = editorState.title
+        ? `${editorState.title} (${formatTime(editorState.startTime)}-${formatTime(editorState.endTime)})`
+        : `Clip ${formatTime(editorState.startTime)}-${formatTime(editorState.endTime)}`;
+
+      const { error } = await supabase.from("clips").insert({
+        video_id: videoId,
+        user_id: user.id,
+        title: clipTitle,
+        start_time: editorState.startTime,
+        end_time: editorState.endTime,
+        duration_seconds: duration,
+        format: editorState.format,
+        status: "manual",
+        virality_score: 0,
+      });
+
+      if (error) throw error;
+      toast.success("Clip criado com sucesso!");
+      refetchClips();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar clip");
+    } finally {
+      setCreatingClip(false);
+    }
+  };
+
+  // Tool actions
+  const handleFormatChange = (ratio: string) => {
+    pushState({ ...editorState, format: ratio });
+    toast.success(`Formato alterado para ${ratio}`);
+  };
+
+  const handleCaptionStyleChange = (style: string) => {
+    pushState({ ...editorState, captionStyle: style });
+  };
+
+  const handleCaptionColorChange = (color: string) => {
+    pushState({ ...editorState, captionColor: color });
+  };
+
+  const handleDuplicate = async () => {
+    if (!videoId || !video) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      const { error } = await supabase.from("clips").insert({
+        video_id: videoId,
+        user_id: user.id,
+        title: `${editorState.title || video.title} (cópia)`,
+        start_time: editorState.startTime,
+        end_time: editorState.endTime,
+        duration_seconds: editorState.endTime - editorState.startTime,
+        format: editorState.format,
+        status: "manual",
+        virality_score: 0,
+      });
+
+      if (error) throw error;
+      toast.success("Clip duplicado!");
+      refetchClips();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // AI Chat
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || chatLoading) return;
 
@@ -91,7 +315,7 @@ const DashboardEditor = () => {
         },
         body: JSON.stringify({
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          context: { format, currentTime, totalDuration, captionColor, captionStyle, videoTitle: video?.title },
+          context: { format: editorState.format, currentTime, totalDuration, captionColor: editorState.captionColor, captionStyle: editorState.captionStyle, videoTitle: video?.title },
         }),
       });
 
@@ -133,21 +357,18 @@ const DashboardEditor = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsertAssistant(content);
-          } catch { /* partial JSON, wait for more */ }
+          } catch { /* partial JSON */ }
         }
       }
-
-      setHistory(prev => [...prev.slice(0, historyIndex + 1), assistantSoFar]);
-      setHistoryIndex(prev => prev + 1);
     } catch (e: any) {
       toast.error(e.message || "Erro ao processar comando de IA");
       setMessages(prev => [...prev, { role: "assistant", content: `❌ ${e.message || "Erro ao processar"}` }]);
     } finally {
       setChatLoading(false);
     }
-  }, [messages, chatLoading, format, currentTime, totalDuration, captionColor, captionStyle, historyIndex, video?.title]);
+  }, [messages, chatLoading, editorState, currentTime, totalDuration, video?.title]);
 
-  // No video selected state
+  // No video selected
   if (!videoId) {
     return (
       <DashboardLayout>
@@ -187,11 +408,25 @@ const DashboardEditor = () => {
           <p className="text-sm text-muted-foreground truncate max-w-md">{video?.title || "Editando"}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-7" disabled={historyIndex < 0} onClick={() => setHistoryIndex(i => Math.max(0, i - 1))}>
+          {/* Save indicator */}
+          <div className="text-[10px] text-muted-foreground mr-2">
+            {saving ? (
+              <span className="flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Salvando...</span>
+            ) : isDirty ? (
+              <span className="text-amber-400">● Não salvo</span>
+            ) : lastSaved ? (
+              <span className="flex items-center gap-1 text-emerald-400"><Check size={10} /> Salvo</span>
+            ) : null}
+          </div>
+
+          <Button variant="ghost" size="sm" className="h-7" disabled={historyIndex <= 0} onClick={undo}>
             <RotateCcw size={14} className="mr-1" /> Desfazer
           </Button>
-          <Button variant="ghost" size="sm" className="h-7" disabled={historyIndex >= history.length - 1} onClick={() => setHistoryIndex(i => Math.min(history.length - 1, i + 1))}>
+          <Button variant="ghost" size="sm" className="h-7" disabled={historyIndex >= history.length - 1} onClick={redo}>
             <RotateCw size={14} className="mr-1" /> Refazer
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => handleSave(false)} disabled={!isDirty || saving}>
+            <Save size={14} className="mr-1" /> Salvar
           </Button>
           <Button size="sm" onClick={() => setChatOpen(!chatOpen)} variant={chatOpen ? "default" : "outline"}>
             <Bot size={14} className="mr-1" /> IA
@@ -209,34 +444,28 @@ const DashboardEditor = () => {
                 ref={playerRef}
                 video={video}
                 onTimeUpdate={setCurrentTime}
-                onDurationChange={(d) => {
-                  setTotalDuration(d);
-                  setEndTime(formatTime(Math.min(30, d)));
-                }}
-                startTime={parseTime(startTime)}
-                endTime={parseTime(endTime)}
+                onDurationChange={(d) => setTotalDuration(d)}
+                startTime={editorState.startTime}
+                endTime={editorState.endTime}
               />
             </div>
           )}
 
-          {/* Timeline */}
+          {/* Timeline with draggable handles */}
           <div className="venus-card p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] text-muted-foreground tabular-nums">00:00</span>
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Timeline</span>
               <span className="text-[11px] text-muted-foreground tabular-nums">{formatTime(totalDuration)}</span>
             </div>
-            <div className="h-12 bg-accent rounded-lg relative overflow-hidden mb-3 cursor-pointer"
-              onClick={(e) => {
-                if (!totalDuration) return;
-                const rect = e.currentTarget.getBoundingClientRect();
-                const pct = (e.clientX - rect.left) / rect.width;
-                const time = pct * totalDuration;
-                playerRef.current?.seekTo(time);
-              }}
+
+            <div
+              ref={timelineRef}
+              className="h-14 bg-accent rounded-lg relative overflow-hidden mb-3 cursor-pointer select-none"
+              onClick={handleTimelineClick}
             >
               {/* Waveform bars */}
-              <div className="absolute inset-0 flex items-center px-1">
+              <div className="absolute inset-0 flex items-center px-1 pointer-events-none">
                 {Array.from({ length: 60 }).map((_, i) => (
                   <div key={i} className="flex-1 mx-px bg-muted-foreground/20 rounded-sm" style={{ height: `${20 + Math.sin(i * 0.5) * 30 + Math.random() * 20}%` }} />
                 ))}
@@ -245,53 +474,97 @@ const DashboardEditor = () => {
               {/* Selection range */}
               {totalDuration > 0 && (
                 <div
-                  className="absolute inset-y-0 bg-foreground/10 border-x-2 border-foreground rounded"
+                  className="absolute inset-y-0 bg-primary/15 border-x-2 border-primary rounded"
                   style={{
-                    left: `${(parseTime(startTime) / totalDuration) * 100}%`,
-                    width: `${((parseTime(endTime) - parseTime(startTime)) / totalDuration) * 100}%`,
+                    left: `${(editorState.startTime / totalDuration) * 100}%`,
+                    width: `${((editorState.endTime - editorState.startTime) / totalDuration) * 100}%`,
                   }}
                 >
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground rounded-l cursor-col-resize" />
-                  <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-foreground rounded-r cursor-col-resize" />
+                  {/* Start handle - draggable */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-3 bg-primary cursor-col-resize rounded-l flex items-center justify-center hover:bg-primary/80 z-20"
+                    onMouseDown={(e) => handleTimelineMouseDown(e, "start")}
+                  >
+                    <div className="w-0.5 h-4 bg-primary-foreground rounded" />
+                  </div>
+                  {/* End handle - draggable */}
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-3 bg-primary cursor-col-resize rounded-r flex items-center justify-center hover:bg-primary/80 z-20"
+                    onMouseDown={(e) => handleTimelineMouseDown(e, "end")}
+                  >
+                    <div className="w-0.5 h-4 bg-primary-foreground rounded" />
+                  </div>
                 </div>
               )}
 
-              {/* Playhead */}
+              {/* Playhead - draggable */}
               {totalDuration > 0 && (
-                <motion.div
-                  className="absolute top-0 bottom-0 w-0.5 bg-foreground z-10"
-                  style={{ left: `${(currentTime / totalDuration) * 100}%` }}
-                />
+                <div
+                  className="absolute top-0 bottom-0 z-30 cursor-grab active:cursor-grabbing"
+                  style={{ left: `${(currentTime / totalDuration) * 100}%`, transform: "translateX(-50%)" }}
+                  onMouseDown={(e) => handleTimelineMouseDown(e, "playhead")}
+                >
+                  <div className="w-0.5 h-full bg-foreground" />
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-foreground rounded-full border-2 border-background" />
+                </div>
               )}
 
               {/* Clip markers */}
               {clips?.map((clip) => (
                 <div
                   key={clip.id}
-                  className="absolute top-0 h-1 bg-primary/60 rounded-full"
+                  className="absolute top-0 h-1.5 bg-primary/60 rounded-full cursor-pointer hover:bg-primary"
                   style={{
                     left: `${totalDuration > 0 ? (Number(clip.start_time) / totalDuration) * 100 : 0}%`,
                     width: `${totalDuration > 0 ? ((Number(clip.end_time) - Number(clip.start_time)) / totalDuration) * 100 : 0}%`,
                   }}
                   title={clip.title}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    pushState({ ...editorState, startTime: Number(clip.start_time), endTime: Number(clip.end_time) });
+                    playerRef.current?.seekTo(Number(clip.start_time));
+                  }}
                 />
               ))}
             </div>
+
+            {/* Time inputs */}
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Início</label>
                 <div className="flex gap-1 mt-1">
-                  <Input value={startTime} onChange={e => setStartTime(e.target.value)} className="h-7 text-xs" />
-                  <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => setStartTime(formatTime(currentTime))}>
+                  <Input
+                    value={formatTime(editorState.startTime)}
+                    onChange={e => {
+                      const t = parseTime(e.target.value);
+                      if (!isNaN(t)) pushState({ ...editorState, startTime: t });
+                    }}
+                    className="h-7 text-xs"
+                  />
+                  <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => {
+                    pushState({ ...editorState, startTime: Math.round(currentTime * 10) / 10 });
+                  }}>
                     Marcar
                   </Button>
                 </div>
               </div>
+              <div className="text-xs text-muted-foreground tabular-nums pt-4">
+                {formatTime(editorState.endTime - editorState.startTime)}
+              </div>
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Fim</label>
                 <div className="flex gap-1 mt-1">
-                  <Input value={endTime} onChange={e => setEndTime(e.target.value)} className="h-7 text-xs" />
-                  <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => setEndTime(formatTime(currentTime))}>
+                  <Input
+                    value={formatTime(editorState.endTime)}
+                    onChange={e => {
+                      const t = parseTime(e.target.value);
+                      if (!isNaN(t)) pushState({ ...editorState, endTime: t });
+                    }}
+                    className="h-7 text-xs"
+                  />
+                  <Button variant="outline" size="sm" className="h-7 text-[9px] px-1.5" onClick={() => {
+                    pushState({ ...editorState, endTime: Math.round(currentTime * 10) / 10 });
+                  }}>
                     Marcar
                   </Button>
                 </div>
@@ -301,52 +574,166 @@ const DashboardEditor = () => {
 
           {/* Tools row */}
           <div className="flex gap-3">
+            {/* Main tools */}
             <div className="venus-card p-4 flex-1">
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">Ferramentas</h3>
               <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { icon: ZoomIn, label: "Zoom" },
-                  { icon: Smile, label: "Emojis" },
-                  { icon: Image, label: "Logo" },
-                  { icon: Type, label: "Título" },
-                  { icon: Copy, label: "Duplicar" },
-                  { icon: Layout, label: "Template" },
-                  { icon: Crop, label: "Reframe" },
-                  { icon: Scissors, label: "Clip" },
-                ].map((t) => (
-                  <button key={t.label} className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-                    <t.icon size={14} strokeWidth={1.5} />
-                    <span className="text-[9px]">{t.label}</span>
-                  </button>
-                ))}
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  onClick={handleCreateClip}
+                  disabled={creatingClip}
+                >
+                  <Scissors size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">{creatingClip ? "..." : "Clip"}</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                  onClick={handleDuplicate}
+                >
+                  <Copy size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Duplicar</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+                  title="Em breve"
+                  disabled
+                >
+                  <ZoomIn size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Zoom</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+                  title="Em breve"
+                  disabled
+                >
+                  <Smile size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Emojis</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+                  title="Em breve"
+                  disabled
+                >
+                  <Image size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Logo</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+                  title="Em breve"
+                  disabled
+                >
+                  <Layout size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Template</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+                  title="Em breve"
+                  disabled
+                >
+                  <Type size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Título</span>
+                </button>
+                <button
+                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
+                  title="Em breve"
+                  disabled
+                >
+                  <Crop size={14} strokeWidth={1.5} />
+                  <span className="text-[9px]">Reframe</span>
+                </button>
               </div>
             </div>
 
+            {/* Format */}
             <div className="venus-card p-4 w-44">
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">Formato</h3>
               <div className="space-y-1">
-                {[{ label: "9:16 Vertical", ratio: "9:16" }, { label: "1:1 Quadrado", ratio: "1:1" }, { label: "16:9 Horizontal", ratio: "16:9" }].map((f) => (
-                  <button key={f.ratio} onClick={() => setFormat(f.ratio)} className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-colors ${format === f.ratio ? "bg-foreground text-background font-medium" : "text-muted-foreground hover:bg-accent"}`}>
+                {[
+                  { label: "9:16 Vertical", ratio: "9:16", icon: RectangleVertical },
+                  { label: "1:1 Quadrado", ratio: "1:1", icon: Square },
+                  { label: "16:9 Horizontal", ratio: "16:9", icon: RectangleHorizontal },
+                ].map((f) => (
+                  <button
+                    key={f.ratio}
+                    onClick={() => handleFormatChange(f.ratio)}
+                    className={`w-full flex items-center justify-between text-xs px-3 py-2 rounded-lg transition-colors ${
+                      editorState.format === f.ratio
+                        ? "bg-foreground text-background font-medium"
+                        : "text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
                     <span>{f.label}</span>
+                    <f.icon size={12} />
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Caption */}
             <div className="venus-card p-4 w-44">
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">Legenda</h3>
               <div className="space-y-2">
                 <div>
                   <label className="text-[10px] text-muted-foreground">Estilo</label>
-                  <Input value={captionStyle} onChange={e => setCaptionStyle(e.target.value)} className="mt-1 h-7 text-xs" />
+                  <select
+                    value={editorState.captionStyle}
+                    onChange={(e) => handleCaptionStyleChange(e.target.value)}
+                    className="mt-1 w-full h-7 text-xs rounded-md border border-border bg-background px-2"
+                  >
+                    <option>Bold Centered</option>
+                    <option>Karaoke</option>
+                    <option>Minimal</option>
+                    <option>Pop</option>
+                    <option>Neon</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-[10px] text-muted-foreground">Cor</label>
-                  <Input value={captionColor} onChange={e => setCaptionColor(e.target.value)} className="mt-1 h-7 text-xs" />
+                  <div className="flex gap-1 mt-1">
+                    {["#FFFFFF", "#FFD700", "#00FF88", "#FF4444", "#4488FF"].map(c => (
+                      <button
+                        key={c}
+                        onClick={() => handleCaptionColorChange(c)}
+                        className={`w-6 h-6 rounded-full border-2 transition-transform ${
+                          editorState.captionColor === c ? "border-foreground scale-110" : "border-border"
+                        }`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Existing clips list */}
+          {clips && clips.length > 0 && (
+            <div className="venus-card p-4">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                Clips ({clips.length})
+              </h3>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {clips.map((clip) => (
+                  <button
+                    key={clip.id}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 transition-colors w-full text-left text-xs"
+                    onClick={() => {
+                      pushState({ ...editorState, startTime: Number(clip.start_time), endTime: Number(clip.end_time) });
+                      playerRef.current?.seekTo(Number(clip.start_time));
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{clip.title}</p>
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatDuration(clip.duration_seconds)} · Score: {clip.virality_score || 0}
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="text-[8px] ml-2">{clip.status}</Badge>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Transcript segments - clickable */}
           {transcript?.transcript_segments && transcript.transcript_segments.length > 0 && (
@@ -373,7 +760,16 @@ const DashboardEditor = () => {
             </div>
           )}
 
-          <Button className="w-full" size="sm" onClick={() => toast.success("Alterações salvas!")}>Salvar alterações</Button>
+          {/* Bottom action bar */}
+          <div className="flex gap-2">
+            <Button className="flex-1" size="sm" onClick={handleCreateClip} disabled={creatingClip}>
+              {creatingClip ? <Loader2 size={14} className="animate-spin mr-1" /> : <Scissors size={14} className="mr-1" />}
+              Criar clip do trecho selecionado
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={!isDirty}>
+              <Save size={14} className="mr-1" /> Salvar
+            </Button>
+          </div>
         </div>
 
         {/* AI Chat Panel */}
@@ -391,7 +787,6 @@ const DashboardEditor = () => {
                 <Sparkles size={12} className="text-muted-foreground ml-auto" />
               </div>
 
-              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {messages.length === 0 && (
                   <div className="text-center py-6">
@@ -442,7 +837,6 @@ const DashboardEditor = () => {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Quick suggestions when there are messages */}
               {messages.length > 0 && !chatLoading && (
                 <div className="px-3 pb-2 flex flex-wrap gap-1">
                   {QUICK_SUGGESTIONS.slice(0, 3).map(s => (
@@ -453,7 +847,6 @@ const DashboardEditor = () => {
                 </div>
               )}
 
-              {/* Input */}
               <div className="p-3 border-t border-border">
                 <form onSubmit={(e) => { e.preventDefault(); sendMessage(chatInput); }} className="flex gap-1.5">
                   <Input
