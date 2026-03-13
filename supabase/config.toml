@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.editor-chat]
 verify_jwt = false
+
+[functions.export-clip]
+verify_jwt = false
