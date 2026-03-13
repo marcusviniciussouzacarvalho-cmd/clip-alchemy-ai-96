@@ -113,7 +113,7 @@ const DashboardLibrary = () => {
                   v.status === "error" ? "bg-destructive/20 text-destructive-foreground" :
                   "bg-accent text-muted-foreground"
                 }`}>
-                  {v.status === "ready" ? "Pronto" : v.status === "processing" ? "Processando" : v.status === "error" ? "Erro" : "Enviado"}
+                  {v.status === "ready" ? "Pronto" : v.status === "processing" ? "Processando" : v.status === "error" || v.status === "failed" ? "Erro" : "Enviado"}
                 </span>
               </motion.div>
             ))}
