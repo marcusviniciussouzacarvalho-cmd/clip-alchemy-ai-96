@@ -38,7 +38,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Admin pages
+// Admin pages (lazy loaded)
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminVideos = lazy(() => import("./pages/admin/AdminVideos"));
 const AdminJobs = lazy(() => import("./pages/admin/AdminJobs"));
