@@ -44,6 +44,8 @@ const AdminVideos = lazy(() => import("./pages/admin/AdminVideos"));
 const AdminJobs = lazy(() => import("./pages/admin/AdminJobs"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminErrors = lazy(() => import("./pages/admin/AdminErrors"));
+const DashboardVideoDetail = lazy(() => import("./pages/DashboardVideoDetail"));
 
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
