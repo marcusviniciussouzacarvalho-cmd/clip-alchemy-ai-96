@@ -1,7 +1,8 @@
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Scissors, Download, Play, Heart, Trash2, BarChart3, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Scissors, Download, Play, Heart, Trash2, BarChart3, Clock, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useClips, useToggleFavorite, useDeleteClip } from "@/hooks/use-pipeline";
+import { useExportClip } from "@/hooks/use-export";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +59,7 @@ const DashboardClips = () => {
   const { data: clips, isLoading } = useClips();
   const toggleFav = useToggleFavorite();
   const deleteClip = useDeleteClip();
+  const { exportClip, exporting } = useExportClip();
   const [expandedClip, setExpandedClip] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -154,8 +156,19 @@ const DashboardClips = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5 pt-1">
-                  <Button variant="default" size="sm" className="flex-1 h-8 text-xs">
-                    <Download size={12} className="mr-1" /> Exportar
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => exportClip(clip.id)}
+                    disabled={exporting === clip.id}
+                  >
+                    {exporting === clip.id ? (
+                      <Loader2 size={12} className="animate-spin mr-1" />
+                    ) : (
+                      <Download size={12} className="mr-1" />
+                    )}
+                    Exportar
                   </Button>
                   <Button variant="outline" size="sm" className="h-8 w-8 p-0"
                     onClick={() => navigate(`/dashboard/editor?video=${clip.video_id}`)}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2, Send, Loader2, Sparkles, Bot, User, Scissors, RotateCcw, RotateCw, Video, ChevronLeft, Save, Check, Square, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { Play, ZoomIn, Smile, Image, Copy, Layout, Type, Crop, Pause, SkipBack, SkipForward, Volume2, Send, Loader2, Sparkles, Bot, User, Scissors, RotateCcw, RotateCw, Video, ChevronLeft, Save, Check, Square, RectangleHorizontal, RectangleVertical, Download } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { useVideo, useClips, useTranscript } from "@/hooks/use-pipeline";
 import VideoPlayer, { VideoPlayerRef } from "@/components/video/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useExportClip } from "@/hooks/use-export";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -72,7 +73,8 @@ const DashboardEditor = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Clip creation
+  // Clip creation & export
+  const { exportSelection, exporting: exportingId } = useExportClip();
   const [creatingClip, setCreatingClip] = useState(false);
 
   // Timeline drag
@@ -764,7 +766,16 @@ const DashboardEditor = () => {
           <div className="flex gap-2">
             <Button className="flex-1" size="sm" onClick={handleCreateClip} disabled={creatingClip}>
               {creatingClip ? <Loader2 size={14} className="animate-spin mr-1" /> : <Scissors size={14} className="mr-1" />}
-              Criar clip do trecho selecionado
+              Criar clip
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => videoId && exportSelection(videoId, editorState.startTime, editorState.endTime, editorState.format)}
+              disabled={!!exportingId}
+            >
+              {exportingId ? <Loader2 size={14} className="animate-spin mr-1" /> : <Download size={14} className="mr-1" />}
+              Exportar
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={!isDirty}>
               <Save size={14} className="mr-1" /> Salvar
