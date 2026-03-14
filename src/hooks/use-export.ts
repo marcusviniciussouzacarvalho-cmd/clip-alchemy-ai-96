@@ -67,6 +67,11 @@ export function useExportClip() {
 }
 
 async function renderAndDownload(result: ExportResult) {
+  if (result.source_type === "youtube_embed") {
+    toast.info("Vídeo do YouTube — exportação direta indisponível. Use o link do YouTube para baixar.", { duration: 5000 });
+    return;
+  }
+
   if (!result.playback_url && !result.download_url) {
     throw new Error("Arquivo interno indisponível para exportação");
   }
