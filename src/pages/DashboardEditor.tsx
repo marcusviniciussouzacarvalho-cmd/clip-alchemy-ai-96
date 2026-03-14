@@ -106,7 +106,7 @@ const DashboardEditor = () => {
 
     const loadSession = async () => {
       if (!videoId) return;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("editor_sessions")
         .select("state, updated_at")
         .eq("video_id", videoId)
