@@ -64,8 +64,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!videoData?.file_path) {
-      return new Response(JSON.stringify({ error: "Este vídeo ainda não possui um arquivo interno exportável." }), {
+    // Resolve playback URL based on source type
+    let playbackUrl: string | null = null;
+    let sourceType = "internal";
+
+    if (videoData.file_path) {
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: signed } = await serviceClient.storage.from("videos").createSignedUrl(videoData.file_path, 60 * 60);
+      playbackUrl = signed?.signedUrl || null;
+      sourceType = "internal";
+    } else if (videoData.source_type === "youtube" && videoData.external_video_id) {
+      playbackUrl = `https://www.youtube.com/embed/${videoData.external_video_id}?rel=0&modestbranding=1&enablejsapi=1`;
+      sourceType = "youtube_embed";
+    }
+
+    if (!playbackUrl) {
+      return new Response(JSON.stringify({ error: "Este vídeo ainda não possui um arquivo interno ou embed exportável." }), {
         status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
