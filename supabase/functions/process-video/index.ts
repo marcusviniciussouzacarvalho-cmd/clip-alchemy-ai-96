@@ -187,7 +187,10 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
   const duration = Math.max(30, video?.duration_seconds || 180);
 
   await updateJob(supabase, jobId, videoId, "processing", 5, "Validando mídia");
-  if (!video?.file_path) throw new Error("Vídeo sem arquivo de mídia interno.");
+  const isYouTubeEmbed = video?.source_type === "youtube" && !video?.file_path;
+  if (!video?.file_path && !isYouTubeEmbed) {
+    throw new Error("Vídeo sem arquivo de mídia interno.");
+  }
 
   await updateJob(supabase, jobId, videoId, "processing", 18, "Preparando transcrição");
   const transcriptText = options?.generate_transcript === false ? generateFallbackTranscript(title) : await buildTranscript(video);
