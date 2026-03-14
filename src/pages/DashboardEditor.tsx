@@ -41,6 +41,10 @@ const QUICK_SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editor-chat`;
 
 const DashboardEditor = () => {
+  useEffect(() => {
+    console.log("[PATCH V2] DashboardEditor loaded");
+  }, []);
+
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get("video") || undefined;
   const { data: video, isLoading: videoLoading } = useVideo(videoId);
@@ -89,6 +93,8 @@ const DashboardEditor = () => {
   // Initialize editor state from video
   useEffect(() => {
     if (!video) return;
+    const mediaMode = video.source_type === "youtube" && !video.file_path ? "embed externo" : "internal media";
+    console.log(`[PATCH V2] using ${mediaMode}`, { source_type: video.source_type, file_path: video.file_path });
 
     const initial: EditorState = {
       startTime: 0,
@@ -455,8 +461,17 @@ const DashboardEditor = () => {
     );
   }
 
+  const isUsingEmbed = video?.source_type === "youtube" && !video?.file_path;
+
   return (
     <DashboardLayout>
+      {/* PATCH V2 Badge */}
+      <div className="mb-3 flex items-center gap-2">
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-xs px-3 py-1">
+          PATCH V2 ATIVO
+        </Badge>
+      </div>
+
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -466,6 +481,16 @@ const DashboardEditor = () => {
           </div>
           <h1 className="text-2xl font-extrabold mb-1">Editor de Clip</h1>
           <p className="text-sm text-muted-foreground truncate max-w-md">{video?.title || "Editando"}</p>
+
+          {/* Diagnostic block */}
+          <div className="mt-2 venus-card p-3 text-[10px] font-mono space-y-0.5 text-muted-foreground bg-accent/50 border border-border rounded-lg max-w-md">
+            <div><span className="text-foreground font-semibold">source_type:</span> {video?.source_type ?? "null"}</div>
+            <div><span className="text-foreground font-semibold">player:</span> {isUsingEmbed ? "🌐 embed externo (YouTube)" : "📁 mídia interna (storage)"}</div>
+            <div><span className="text-foreground font-semibold">clip selecionado:</span> {editorState.title || "nenhum"}</div>
+            <div><span className="text-foreground font-semibold">start_time:</span> {editorState.startTime}s</div>
+            <div><span className="text-foreground font-semibold">end_time:</span> {editorState.endTime}s</div>
+            <div><span className="text-foreground font-semibold">editor_session:</span> {sessionLoaded ? (lastSaved ? `✅ salva em ${lastSaved.toLocaleTimeString()}` : "✅ carregada (sem save prévio)") : "⏳ carregando..."}</div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {/* Save indicator */}
@@ -833,7 +858,7 @@ const DashboardEditor = () => {
               disabled={!!exportingId}
             >
               {exportingId ? <Loader2 size={14} className="animate-spin mr-1" /> : <Download size={14} className="mr-1" />}
-              Exportar
+              Exportar <span className="ml-1 text-[8px] font-mono opacity-60">V2</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={!isDirty}>
               <Save size={14} className="mr-1" /> Salvar

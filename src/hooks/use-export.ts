@@ -20,6 +20,7 @@ export function useExportClip() {
   const [exporting, setExporting] = useState<string | null>(null);
 
   const exportClip = async (clipId: string) => {
+    console.log("[PATCH V2] export flow started", { clipId });
     setExporting(clipId);
     try {
       const { data, error } = await supabase.functions.invoke("export-clip", {
@@ -41,6 +42,7 @@ export function useExportClip() {
   };
 
   const exportSelection = async (videoId: string, startTime: number, endTime: number, format?: string) => {
+    console.log("[PATCH V2] export flow started", { videoId, startTime, endTime, format });
     setExporting(videoId);
     try {
       const { data, error } = await supabase.functions.invoke("export-clip", {
@@ -65,6 +67,11 @@ export function useExportClip() {
 }
 
 async function renderAndDownload(result: ExportResult) {
+  if (result.source_type === "youtube_embed") {
+    toast.info("Vídeo do YouTube — exportação direta indisponível. Use o link do YouTube para baixar.", { duration: 5000 });
+    return;
+  }
+
   if (!result.playback_url && !result.download_url) {
     throw new Error("Arquivo interno indisponível para exportação");
   }
