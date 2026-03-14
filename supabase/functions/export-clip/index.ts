@@ -88,19 +88,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const { data: signed } = await serviceClient.storage.from("videos").createSignedUrl(videoData.file_path, 60 * 60);
-    if (!signed?.signedUrl) {
-      return new Response(JSON.stringify({ error: "Could not generate source URL" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const exportStart = clipData?.start_time ?? start_time ?? 0;
     const exportEnd = clipData?.end_time ?? end_time ?? videoData?.duration_seconds ?? 30;
     const duration = Math.max(0.1, exportEnd - exportStart);
@@ -109,9 +96,9 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       export: {
-        source_type: "internal",
-        playback_url: signed.signedUrl,
-        download_url: signed.signedUrl,
+        source_type: sourceType,
+        playback_url: playbackUrl,
+        download_url: sourceType === "internal" ? playbackUrl : null,
         start_time: exportStart,
         end_time: exportEnd,
         duration,
@@ -124,9 +111,12 @@ Deno.serve(async (req) => {
           clip_id: clipData?.id || null,
           video_id: videoData.id,
           virality_score: clipData?.virality_score || null,
-          source_path: videoData.file_path,
+          source_path: videoData.file_path || null,
+          source_type: sourceType,
         },
-        instructions: "O frontend deve renderizar o segmento localmente a partir da playback_url e baixar o blob exportado.",
+        instructions: sourceType === "youtube_embed"
+          ? "Vídeo do YouTube — não é possível renderizar localmente. O frontend deve exibir o embed e oferecer link para o YouTube."
+          : "O frontend deve renderizar o segmento localmente a partir da playback_url e baixar o blob exportado.",
       },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
