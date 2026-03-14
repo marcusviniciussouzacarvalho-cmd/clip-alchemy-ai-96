@@ -248,7 +248,7 @@ const DashboardEditor = () => {
         state: editorState as any,
       };
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("editor_sessions")
         .upsert(payload, { onConflict: "video_id,user_id" });
 
