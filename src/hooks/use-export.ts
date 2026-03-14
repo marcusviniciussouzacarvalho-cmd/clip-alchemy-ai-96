@@ -20,6 +20,7 @@ export function useExportClip() {
   const [exporting, setExporting] = useState<string | null>(null);
 
   const exportClip = async (clipId: string) => {
+    console.log("[PATCH V2] export flow started", { clipId });
     setExporting(clipId);
     try {
       const { data, error } = await supabase.functions.invoke("export-clip", {
