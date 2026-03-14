@@ -65,6 +65,7 @@ const DashboardEditor = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
 
   // AI Chat
   const [chatOpen, setChatOpen] = useState(true);
@@ -87,20 +88,44 @@ const DashboardEditor = () => {
 
   // Initialize editor state from video
   useEffect(() => {
-    if (video) {
-      const initial: EditorState = {
-        startTime: 0,
-        endTime: Math.min(30, totalDuration || 30),
-        format: "9:16",
-        captionColor: "#FFFFFF",
-        captionStyle: "Bold Centered",
-        title: video.title || "",
-      };
-      setEditorState(initial);
-      setHistory([initial]);
-      setHistoryIndex(0);
-    }
-  }, [video?.id]);
+    if (!video) return;
+
+    const initial: EditorState = {
+      startTime: 0,
+      endTime: Math.min(30, totalDuration || 30),
+      format: "9:16",
+      captionColor: "#FFFFFF",
+      captionStyle: "Bold Centered",
+      title: video.title || "",
+    };
+
+    setEditorState(initial);
+    setHistory([initial]);
+    setHistoryIndex(0);
+    setSessionLoaded(false);
+
+    const loadSession = async () => {
+      if (!videoId) return;
+      const { data, error } = await supabase
+        .from("editor_sessions")
+        .select("state, updated_at")
+        .eq("video_id", videoId)
+        .maybeSingle();
+
+      if (error) return;
+      if (data?.state) {
+        const saved = data.state as Partial<EditorState>;
+        const restored: EditorState = { ...initial, ...saved };
+        setEditorState(restored);
+        setHistory([restored]);
+        setHistoryIndex(0);
+        if (data.updated_at) setLastSaved(new Date(data.updated_at));
+      }
+      setSessionLoaded(true);
+    };
+
+    loadSession();
+  }, [video?.id, videoId]);
 
   // Update endTime when duration loads
   useEffect(() => {
@@ -118,10 +143,12 @@ const DashboardEditor = () => {
     return () => clearTimeout(timer);
   }, [isDirty, editorState]);
 
-  const pushState = (newState: EditorState) => {
+  const pushState = (newState: EditorState, commitHistory = true) => {
     setEditorState(newState);
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), newState]);
-    setHistoryIndex(prev => prev + 1);
+    if (commitHistory) {
+      setHistory(prev => [...prev.slice(0, historyIndex + 1), newState]);
+      setHistoryIndex(prev => prev + 1);
+    }
     setIsDirty(true);
   };
 
@@ -173,14 +200,21 @@ const DashboardEditor = () => {
         playerRef.current?.seekTo(time);
       } else if (dragging === "start") {
         const newStart = Math.max(0, Math.min(editorState.endTime - 1, time));
-        pushState({ ...editorState, startTime: Math.round(newStart * 10) / 10 });
+        pushState({ ...editorState, startTime: Math.round(newStart * 10) / 10 }, false);
       } else if (dragging === "end") {
         const newEnd = Math.max(editorState.startTime + 1, Math.min(totalDuration, time));
-        pushState({ ...editorState, endTime: Math.round(newEnd * 10) / 10 });
+        pushState({ ...editorState, endTime: Math.round(newEnd * 10) / 10 }, false);
       }
     };
 
-    const handleUp = () => setDragging(null);
+    const handleUp = () => {
+      setDragging(null);
+      setHistory(prev => {
+        const next = [...prev.slice(0, historyIndex + 1), editorState];
+        return next;
+      });
+      setHistoryIndex(prev => prev + 1);
+    };
 
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", handleUp);
@@ -204,13 +238,26 @@ const DashboardEditor = () => {
     if (!videoId || !isDirty) return;
     setSaving(true);
     try {
-      // Save as metadata on the video - we store editor state
-      // In a real app you'd have an editor_sessions table
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth.user;
+      if (!user) throw new Error("Não autenticado");
+
+      const payload = {
+        user_id: user.id,
+        video_id: videoId,
+        state: editorState as any,
+      };
+
+      const { error } = await supabase
+        .from("editor_sessions")
+        .upsert(payload, { onConflict: "video_id,user_id" });
+
+      if (error) throw error;
       setIsDirty(false);
       setLastSaved(new Date());
       if (!auto) toast.success("Alterações salvas!");
     } catch (err: any) {
-      toast.error("Erro ao salvar");
+      toast.error(err.message || "Erro ao salvar");
     } finally {
       setSaving(false);
     }
@@ -369,6 +416,17 @@ const DashboardEditor = () => {
       setChatLoading(false);
     }
   }, [messages, chatLoading, editorState, currentTime, totalDuration, video?.title]);
+
+  if (!sessionLoaded && video) {
+    return (
+      <DashboardLayout>
+        <div className="venus-card p-12 text-center">
+          <Loader2 size={32} className="mx-auto mb-3 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Carregando sessão de edição...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // No video selected
   if (!videoId) {
