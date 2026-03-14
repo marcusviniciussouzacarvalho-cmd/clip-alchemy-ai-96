@@ -316,7 +316,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ video: { ...video, file_path: internalized.filePath, source_type: "upload" }, job, process: processData }), {
+    const responseVideo = useEmbedMode
+      ? { ...video, source_type: "youtube" }
+      : { ...video, source_type: "upload" };
+
+    return new Response(JSON.stringify({ video: responseVideo, job, process: processData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
