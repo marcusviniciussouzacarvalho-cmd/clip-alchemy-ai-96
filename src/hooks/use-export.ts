@@ -42,6 +42,7 @@ export function useExportClip() {
   };
 
   const exportSelection = async (videoId: string, startTime: number, endTime: number, format?: string) => {
+    console.log("[PATCH V2] export flow started", { videoId, startTime, endTime, format });
     setExporting(videoId);
     try {
       const { data, error } = await supabase.functions.invoke("export-clip", {
