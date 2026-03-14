@@ -188,6 +188,41 @@ export type Database = {
         }
         Relationships: []
       }
+      editor_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          state: Json
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          state?: Json
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          state?: Json
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editor_sessions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_logs: {
         Row: {
           created_at: string
