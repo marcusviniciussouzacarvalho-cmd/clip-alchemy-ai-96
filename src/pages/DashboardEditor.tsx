@@ -465,10 +465,10 @@ const DashboardEditor = () => {
 
   return (
     <DashboardLayout>
-      {/* PATCH V2 Badge */}
+      {/* PATCH V3 Badge */}
       <div className="mb-3 flex items-center gap-2">
         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-xs px-3 py-1">
-          PATCH V2 ATIVO
+          PATCH V3 IA REAL
         </Badge>
       </div>
 
