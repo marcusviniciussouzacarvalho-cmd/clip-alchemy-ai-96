@@ -665,7 +665,7 @@ const DashboardEditor = () => {
             {/* Main tools */}
             <div className="venus-card p-4 flex-1">
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">Ferramentas</h3>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <button
                   className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                   onClick={handleCreateClip}
