@@ -365,28 +365,35 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
   await updateJob(supabase, jobId, videoId, "generating_clips", 76, "Gerando clips e legendas");
   await supabase.from("clips").delete().eq("video_id", videoId);
 
-  const { data: clips } = await supabase.from("clips").insert(
-    moments.map((m: any) => ({
-      video_id: videoId,
-      user_id: userId,
-      title: m.title,
-      start_time: m.start_seconds,
-      end_time: m.end_seconds,
-      duration_seconds: Math.round((m.end_seconds - m.start_seconds) * 100) / 100,
-      virality_score: m.score,
-      virality_details: {
-        hook_strength: m.hook_strength,
-        emotion: m.emotion,
-        pacing: m.pacing,
-        retention: m.retention,
-        reason: m.reason,
-        transcript_source: transcriptSource,
-      },
-      transcript_text: m.transcript_excerpt,
-      format: "9:16",
-      status: "generated",
-    }))
-  ).select();
+  const clipsToInsert = moments.map((m: any) => ({
+    video_id: videoId,
+    user_id: userId,
+    title: m.title,
+    start_time: m.start_seconds,
+    end_time: m.end_seconds,
+    // NOTE: duration_seconds is a GENERATED column — do NOT include it
+    virality_score: m.score,
+    virality_details: {
+      hook_strength: m.hook_strength,
+      emotion: m.emotion,
+      pacing: m.pacing,
+      retention: m.retention,
+      reason: m.reason,
+      transcript_source: transcriptSource,
+    },
+    transcript_text: m.transcript_excerpt,
+    format: "9:16",
+    status: "generated",
+  }));
+
+  console.log("[CLIPS] Inserting", clipsToInsert.length, "clips for video", videoId);
+  const { data: clips, error: clipsError } = await supabase.from("clips").insert(clipsToInsert).select();
+  
+  if (clipsError) {
+    console.error("[CLIPS] Insert error:", JSON.stringify(clipsError));
+    throw new Error(`Falha ao salvar clips: ${clipsError.message}`);
+  }
+  console.log("[CLIPS] ✅ Inserted", clips?.length, "clips successfully");
 
   if (clips?.length && options?.generate_captions !== false) {
     await supabase.from("captions").delete().in("clip_id", clips.map((c: any) => c.id));
