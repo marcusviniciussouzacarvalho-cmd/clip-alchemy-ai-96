@@ -57,15 +57,39 @@ const DashboardImport = () => {
       const { data, error } = await supabase.functions.invoke("import-youtube", {
         body: { url: url.trim(), action: "import" },
       });
+
+      // Handle structured errors from the edge function
+      if (data?.requires_config) {
+        toast.error("Ingestão do YouTube indisponível", {
+          description: data.help || "Configure YOUTUBE_INGEST_ENDPOINT nas secrets do projeto.",
+          duration: 10000,
+        });
+        setStep("preview");
+        return;
+      }
+
       if (error) throw error;
-      toast.success("Vídeo importado! Processamento iniciado.");
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(data?.internalized
+        ? "Vídeo internalizado e processamento iniciado!"
+        : "Vídeo importado! Processamento iniciado.");
+
       if (data?.video?.id) {
         navigate(`/dashboard/videos/${data.video.id}`);
       } else {
         navigate("/dashboard/library");
       }
     } catch (err: any) {
-      toast.error(err.message || "Erro ao importar");
+      const msg = err.message || "Erro ao importar";
+      if (msg.includes("INGEST") || msg.includes("indisponível")) {
+        toast.error("Serviço de ingestão não configurado", {
+          description: "Configure YOUTUBE_INGEST_ENDPOINT para baixar vídeos do YouTube.",
+          duration: 10000,
+        });
+      } else {
+        toast.error(msg);
+      }
       setStep("preview");
     } finally {
       setImporting(false);
@@ -76,7 +100,7 @@ const DashboardImport = () => {
     <DashboardLayout>
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <span className="inline-block bg-primary/10 text-primary border border-primary/30 rounded px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">IMPORT FLOW V3 — STT REAL</span>
+          <span className="inline-block bg-primary/10 text-primary border border-primary/30 rounded px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">IMPORT V3 — INTERNALIZAÇÃO REAL</span>
         </div>
         <h1 className="text-2xl font-extrabold mb-1">Importar do YouTube</h1>
         <p className="text-sm text-muted-foreground">Cole o link de um vídeo do YouTube para importar</p>
