@@ -99,16 +99,17 @@ Deno.serve(async (req) => {
         });
       }
 
-      const renderResp = await fetch(renderEndpoint, {
+      const renderResp = await fetch(`${renderEndpoint}/render`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           source_url: signed.signedUrl,
+          video_id: videoData.id,
+          clip_id: clipData?.id || null,
           start_time: Number(exportStart),
           end_time: Number(exportEnd),
           format: exportFormat,
-          output_format: "mp4",
-          file_name: `${fileNameBase}.mp4`,
+          output_ext: "mp4",
         }),
       });
 
@@ -125,56 +126,28 @@ Deno.serve(async (req) => {
 
       const renderData = await renderResp.json();
 
-      // If render service returns a download URL
-      if (renderData.downloadUrl) {
-        return new Response(JSON.stringify({
-          export: {
-            source_type: "rendered_server",
-            download_url: renderData.downloadUrl,
-            start_time: exportStart,
-            end_time: exportEnd,
-            duration,
-            format: exportFormat,
-            file_name: `${fileNameBase}.mp4`,
-            clip_title: clipData?.title || videoData?.title || "Clip",
-            render_method: "server_side",
-            metadata: {
-              clip_id: clipData?.id || null,
-              video_id: videoData.id,
-              render_endpoint: "configured",
-            },
-          },
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (!renderData.download_url && !renderData.file_path) {
+        return new Response(JSON.stringify({ error: "Render service returned no download_url or file_path" }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // If render service returns the file directly as binary
-      if (renderData.file_path) {
-        // File was saved to clips storage
-        const { data: clipSigned } = await serviceClient.storage
-          .from("clips")
-          .createSignedUrl(renderData.file_path, 60 * 60);
-
-        return new Response(JSON.stringify({
-          export: {
-            source_type: "rendered_server",
-            download_url: clipSigned?.signedUrl || null,
-            start_time: exportStart,
-            end_time: exportEnd,
-            duration,
-            format: exportFormat,
-            file_name: `${fileNameBase}.mp4`,
-            clip_title: clipData?.title || videoData?.title || "Clip",
-            render_method: "server_side",
-          },
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      return new Response(JSON.stringify({ error: "Render service returned no downloadUrl or file_path" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({
+        export: {
+          source_type: "rendered_server",
+          download_url: renderData.download_url || null,
+          file_path: renderData.file_path || null,
+          start_time: exportStart,
+          end_time: exportEnd,
+          duration,
+          format: exportFormat,
+          file_name: `${fileNameBase}.mp4`,
+          clip_title: clipData?.title || videoData?.title || "Clip",
+          render_method: "server_side",
+          mime_type: renderData.mime_type || "video/mp4",
+        },
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
