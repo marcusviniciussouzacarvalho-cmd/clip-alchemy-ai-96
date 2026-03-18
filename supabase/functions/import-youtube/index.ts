@@ -47,44 +47,48 @@ async function fetchYouTubeMeta(videoId: string) {
   };
 }
 
-async function resolveIngestAsset(url: string, videoId: string): Promise<{ downloadUrl: string; durationSeconds?: number; source: string }> {
-  // 1. Try YOUTUBE_DIRECT_ASSET_URL
-  const directAssetUrl = Deno.env.get("YOUTUBE_DIRECT_ASSET_URL");
-  if (directAssetUrl) {
-    return {
-      downloadUrl: directAssetUrl.replace("{videoId}", videoId).replace("{url}", encodeURIComponent(url)),
-      source: "direct_asset_url",
-    };
-  }
-
-  // 2. Try YOUTUBE_INGEST_ENDPOINT
+async function callIngestService(url: string, videoId: string, userId: string): Promise<{
+  filePath: string;
+  assetUrl?: string;
+  title?: string;
+  durationSeconds?: number;
+  mimeType?: string;
+  fileSize?: number;
+}> {
   const ingestEndpoint = Deno.env.get("YOUTUBE_INGEST_ENDPOINT");
   if (!ingestEndpoint) {
     throw new Error("NO_INGEST_CONFIGURED");
   }
 
   console.log("[INGEST] Calling YOUTUBE_INGEST_ENDPOINT:", ingestEndpoint);
-  const resp = await fetch(ingestEndpoint, {
+  const resp = await fetch(`${ingestEndpoint}/ingest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url, videoId }),
+    body: JSON.stringify({
+      source_url: url,
+      video_id: videoId,
+      user_id: userId,
+    }),
   });
 
   if (!resp.ok) {
     const text = await resp.text();
     console.error("[INGEST] Endpoint error:", resp.status, text);
-    throw new Error(`INGEST_FAILED_${resp.status}`);
+    throw new Error(`INGEST_FAILED_${resp.status}: ${text}`);
   }
 
   const data = await resp.json();
-  if (!data?.downloadUrl) {
-    throw new Error("INGEST_NO_URL");
+  if (!data?.file_path) {
+    throw new Error("INGEST_NO_FILE_PATH");
   }
 
   return {
-    downloadUrl: data.downloadUrl,
-    durationSeconds: data.durationSeconds,
-    source: "ingest_endpoint",
+    filePath: data.file_path,
+    assetUrl: data.asset_url,
+    title: data.title,
+    durationSeconds: data.duration_seconds,
+    mimeType: data.mime_type,
+    fileSize: data.file_size,
   };
 }
 
