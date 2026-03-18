@@ -523,7 +523,13 @@ Deno.serve(async (req) => {
       jobId = job.id;
     }
 
-    await processVideoAsync(serviceClient, jobId, videoId, userId, video, options);
+    try {
+      await processVideoAsync(serviceClient, jobId, videoId, userId, video, options);
+    } catch (processError: any) {
+      console.error("[PROCESS] Pipeline error:", processError.message);
+      await updateJob(serviceClient, jobId, videoId, "failed", 0, processError.message, { error_message: processError.message });
+      return new Response(JSON.stringify({ ok: false, error: processError.message, job_id: jobId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     return new Response(JSON.stringify({ ok: true, job_id: jobId, video_id: videoId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
