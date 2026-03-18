@@ -47,65 +47,52 @@ async function fetchYouTubeMeta(videoId: string) {
   };
 }
 
-async function resolveIngestAsset(url: string, videoId: string): Promise<{ downloadUrl: string; durationSeconds?: number; source: string }> {
-  // 1. Try YOUTUBE_DIRECT_ASSET_URL
-  const directAssetUrl = Deno.env.get("YOUTUBE_DIRECT_ASSET_URL");
-  if (directAssetUrl) {
-    return {
-      downloadUrl: directAssetUrl.replace("{videoId}", videoId).replace("{url}", encodeURIComponent(url)),
-      source: "direct_asset_url",
-    };
-  }
-
-  // 2. Try YOUTUBE_INGEST_ENDPOINT
+async function callIngestService(url: string, videoId: string, userId: string): Promise<{
+  filePath: string;
+  assetUrl?: string;
+  title?: string;
+  durationSeconds?: number;
+  mimeType?: string;
+  fileSize?: number;
+}> {
   const ingestEndpoint = Deno.env.get("YOUTUBE_INGEST_ENDPOINT");
   if (!ingestEndpoint) {
     throw new Error("NO_INGEST_CONFIGURED");
   }
 
   console.log("[INGEST] Calling YOUTUBE_INGEST_ENDPOINT:", ingestEndpoint);
-  const resp = await fetch(ingestEndpoint, {
+  const resp = await fetch(`${ingestEndpoint}/ingest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url, videoId }),
+    body: JSON.stringify({
+      source_url: url,
+      video_id: videoId,
+      user_id: userId,
+    }),
   });
 
   if (!resp.ok) {
     const text = await resp.text();
     console.error("[INGEST] Endpoint error:", resp.status, text);
-    throw new Error(`INGEST_FAILED_${resp.status}`);
+    throw new Error(`INGEST_FAILED_${resp.status}: ${text}`);
   }
 
   const data = await resp.json();
-  if (!data?.downloadUrl) {
-    throw new Error("INGEST_NO_URL");
+  if (!data?.file_path) {
+    throw new Error("INGEST_NO_FILE_PATH");
   }
 
   return {
-    downloadUrl: data.downloadUrl,
-    durationSeconds: data.durationSeconds,
-    source: "ingest_endpoint",
+    filePath: data.file_path,
+    assetUrl: data.asset_url,
+    title: data.title,
+    durationSeconds: data.duration_seconds,
+    mimeType: data.mime_type,
+    fileSize: data.file_size,
   };
 }
 
-async function internalizeRemoteFile(serviceClient: any, userId: string, remoteUrl: string, preferredName: string) {
-  console.log("[INGEST] Downloading remote file:", remoteUrl.slice(0, 80));
-  const response = await fetch(remoteUrl);
-  if (!response.ok) throw new Error(`Failed to fetch remote media: ${response.status}`);
-
-  const contentType = response.headers.get("content-type") || "video/mp4";
-  const ext = contentType.includes("webm") ? "webm" : contentType.includes("quicktime") ? "mov" : "mp4";
-  const filePath = `${userId}/imports/${Date.now()}_${preferredName}.${ext}`;
-  const bytes = new Uint8Array(await response.arrayBuffer());
-
-  console.log("[INGEST] Uploading to storage:", filePath, "size:", bytes.byteLength);
-  const { error } = await serviceClient.storage.from("videos").upload(filePath, bytes, {
-    contentType, upsert: false,
-  });
-  if (error) throw new Error(error.message);
-
-  return { filePath, fileSize: bytes.byteLength, contentType };
-}
+// internalizeRemoteFile removed — the ingestor service now uploads directly to Supabase Storage
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -146,7 +133,7 @@ Deno.serve(async (req) => {
     }
 
     const meta = await fetchYouTubeMeta(videoId);
-    const hasIngestConfig = Boolean(Deno.env.get("YOUTUBE_INGEST_ENDPOINT") || Deno.env.get("YOUTUBE_DIRECT_ASSET_URL"));
+    const hasIngestConfig = Boolean(Deno.env.get("YOUTUBE_INGEST_ENDPOINT"));
 
     if (action === "validate") {
       return new Response(JSON.stringify({
@@ -219,67 +206,60 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Try to internalize the YouTube video
-    let resolvedAssetUrl: string | null = asset_url || null;
-    let ingestMeta: any = null;
+    // Call the external ingestor service (downloads + uploads to storage)
+    let ingestResult: any = null;
 
-    if (!resolvedAssetUrl) {
-      try {
-        await updateJobProgress(serviceClient, job.id, video.id, 8, "Conectando ao serviço de ingestão...");
-        ingestMeta = await resolveIngestAsset(url, videoId);
-        resolvedAssetUrl = ingestMeta.downloadUrl;
-      } catch (err: any) {
-        console.error("[INGEST] Failed:", err.message);
+    try {
+      await updateJobProgress(serviceClient, job.id, video.id, 8, "Conectando ao serviço de ingestão...");
+      ingestResult = await callIngestService(url, videoId, user.id);
+    } catch (err: any) {
+      console.error("[INGEST] Failed:", err.message);
 
-        // NO FALLBACK TO EMBED — report the error clearly
-        const isNotConfigured = err.message === "NO_INGEST_CONFIGURED";
-        const errorMsg = isNotConfigured
-          ? "Ingestão do YouTube indisponível. Configure YOUTUBE_INGEST_ENDPOINT nas secrets do projeto."
-          : `Falha na ingestão: ${err.message}`;
+      const isNotConfigured = err.message === "NO_INGEST_CONFIGURED";
+      const errorMsg = isNotConfigured
+        ? "Ingestão do YouTube indisponível. Configure YOUTUBE_INGEST_ENDPOINT nas secrets do projeto."
+        : `Falha na ingestão: ${err.message}`;
 
-        await updateJobProgress(serviceClient, job.id, video.id, 0, errorMsg, "failed");
-        await serviceClient.from("videos").update({
-          status: "failed",
-          error_message: errorMsg,
-          updated_at: new Date().toISOString(),
-        }).eq("id", video.id);
+      await updateJobProgress(serviceClient, job.id, video.id, 0, errorMsg, "failed");
+      await serviceClient.from("videos").update({
+        status: "failed",
+        error_message: errorMsg,
+        updated_at: new Date().toISOString(),
+      }).eq("id", video.id);
 
-        return new Response(JSON.stringify({
-          error: errorMsg,
-          requires_config: isNotConfigured,
-          help: isNotConfigured
-            ? "Adicione a secret YOUTUBE_INGEST_ENDPOINT com a URL do seu serviço de download de vídeo (ex: yt-dlp API)."
-            : undefined,
-          video: { id: video.id },
-          job: { id: job.id },
-        }), {
-          status: isNotConfigured ? 501 : 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      return new Response(JSON.stringify({
+        error: errorMsg,
+        requires_config: isNotConfigured,
+        help: isNotConfigured
+          ? "Adicione a secret YOUTUBE_INGEST_ENDPOINT com a URL do seu serviço de ingestão (ex: https://youtube-ingestor-xxx.up.railway.app)."
+          : undefined,
+        video: { id: video.id },
+        job: { id: job.id },
+      }), {
+        status: isNotConfigured ? 501 : 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Download and internalize
-    await updateJobProgress(serviceClient, job.id, video.id, 18, "Baixando mídia para storage interno...");
-    const internalized = await internalizeRemoteFile(serviceClient, user.id, resolvedAssetUrl!, videoId);
-
+    // Update video with real file_path from ingestor
     await serviceClient.from("videos").update({
-      file_path: internalized.filePath,
-      file_size: internalized.fileSize,
+      file_path: ingestResult.filePath,
+      file_size: ingestResult.fileSize ?? null,
+      title: ingestResult.title || meta.title,
       source_type: "upload",
       progress: 25,
       current_step: "Mídia internalizada — iniciando processamento",
       status: "uploaded",
-      duration_seconds: ingestMeta?.durationSeconds ?? null,
+      duration_seconds: ingestResult.durationSeconds ?? null,
     }).eq("id", video.id);
 
     await serviceClient.from("job_logs").insert({
       job_id: job.id, level: "info",
-      message: "✅ YouTube internalizado como asset interno",
-      metadata: { internal_file_path: internalized.filePath, file_size: internalized.fileSize },
+      message: "✅ YouTube internalizado via serviço externo",
+      metadata: { file_path: ingestResult.filePath, file_size: ingestResult.fileSize },
     });
 
-    // Trigger process-video (now with real file_path)
+    // Trigger process-video
     const processResp = await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/process-video`, {
       method: "POST",
       headers: {
@@ -297,7 +277,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      video: { ...video, source_type: "upload", file_path: internalized.filePath },
+      video: { ...video, source_type: "upload", file_path: ingestResult.filePath },
       job,
       internalized: true,
       process: processData,
