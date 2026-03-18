@@ -1,0 +1,16 @@
+FROM node:20-slim
+
+# Install FFmpeg
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json .
+RUN npm install --production
+
+COPY server.js .
+
+EXPOSE 3002
+CMD ["node", "server.js"]
