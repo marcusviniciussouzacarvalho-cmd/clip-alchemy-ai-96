@@ -814,7 +814,7 @@ const DashboardEditor = () => {
               disabled={!!exportingId}
             >
               {exportingId ? <Loader2 size={14} className="animate-spin mr-1" /> : <Download size={14} className="mr-1" />}
-              Exportar <span className="ml-1 text-[8px] font-mono opacity-60">V2</span>
+              Exportar <span className="ml-1 text-[8px] font-mono opacity-60">V3 Server</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={!isDirty}>
               <Save size={14} className="mr-1" /> Salvar
