@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     }
 
     const meta = await fetchYouTubeMeta(videoId);
-    const hasIngestConfig = Boolean(Deno.env.get("YOUTUBE_INGEST_ENDPOINT") || Deno.env.get("YOUTUBE_DIRECT_ASSET_URL"));
+    const hasIngestConfig = Boolean(Deno.env.get("YOUTUBE_INGEST_ENDPOINT"));
 
     if (action === "validate") {
       return new Response(JSON.stringify({
