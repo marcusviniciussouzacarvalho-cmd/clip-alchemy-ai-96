@@ -92,24 +92,7 @@ async function callIngestService(url: string, videoId: string, userId: string): 
   };
 }
 
-async function internalizeRemoteFile(serviceClient: any, userId: string, remoteUrl: string, preferredName: string) {
-  console.log("[INGEST] Downloading remote file:", remoteUrl.slice(0, 80));
-  const response = await fetch(remoteUrl);
-  if (!response.ok) throw new Error(`Failed to fetch remote media: ${response.status}`);
-
-  const contentType = response.headers.get("content-type") || "video/mp4";
-  const ext = contentType.includes("webm") ? "webm" : contentType.includes("quicktime") ? "mov" : "mp4";
-  const filePath = `${userId}/imports/${Date.now()}_${preferredName}.${ext}`;
-  const bytes = new Uint8Array(await response.arrayBuffer());
-
-  console.log("[INGEST] Uploading to storage:", filePath, "size:", bytes.byteLength);
-  const { error } = await serviceClient.storage.from("videos").upload(filePath, bytes, {
-    contentType, upsert: false,
-  });
-  if (error) throw new Error(error.message);
-
-  return { filePath, fileSize: bytes.byteLength, contentType };
-}
+// internalizeRemoteFile removed — the ingestor service now uploads directly to Supabase Storage
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
