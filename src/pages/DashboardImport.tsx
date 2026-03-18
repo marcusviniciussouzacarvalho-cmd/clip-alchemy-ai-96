@@ -76,7 +76,7 @@ const DashboardImport = () => {
     <DashboardLayout>
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <span className="inline-block bg-primary/10 text-primary border border-primary/30 rounded px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">IMPORT FLOW V2</span>
+          <span className="inline-block bg-primary/10 text-primary border border-primary/30 rounded px-2 py-0.5 text-[10px] font-mono font-bold tracking-wider">IMPORT FLOW V3 — STT REAL</span>
         </div>
         <h1 className="text-2xl font-extrabold mb-1">Importar do YouTube</h1>
         <p className="text-sm text-muted-foreground">Cole o link de um vídeo do YouTube para importar</p>

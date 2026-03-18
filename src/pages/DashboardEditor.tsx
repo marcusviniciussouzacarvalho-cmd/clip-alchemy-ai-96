@@ -42,7 +42,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editor-chat`
 
 const DashboardEditor = () => {
   useEffect(() => {
-    console.log("[PATCH V2] DashboardEditor loaded");
+    console.log("[PATCH V3] DashboardEditor loaded — IA REAL mode");
   }, []);
 
   const [searchParams] = useSearchParams();
@@ -94,7 +94,7 @@ const DashboardEditor = () => {
   useEffect(() => {
     if (!video) return;
     const mediaMode = video.source_type === "youtube" && !video.file_path ? "embed externo" : "internal media";
-    console.log(`[PATCH V2] using ${mediaMode}`, { source_type: video.source_type, file_path: video.file_path });
+    console.log(`[PATCH V3] using ${mediaMode}`, { source_type: video.source_type, file_path: video.file_path });
 
     const initial: EditorState = {
       startTime: 0,
@@ -465,10 +465,10 @@ const DashboardEditor = () => {
 
   return (
     <DashboardLayout>
-      {/* PATCH V2 Badge */}
+      {/* PATCH V3 Badge */}
       <div className="mb-3 flex items-center gap-2">
         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-xs px-3 py-1">
-          PATCH V2 ATIVO
+          PATCH V3 IA REAL
         </Badge>
       </div>
 
@@ -482,10 +482,13 @@ const DashboardEditor = () => {
           <h1 className="text-2xl font-extrabold mb-1">Editor de Clip</h1>
           <p className="text-sm text-muted-foreground truncate max-w-md">{video?.title || "Editando"}</p>
 
-          {/* Diagnostic block */}
+          {/* Diagnostic block V3 */}
           <div className="mt-2 venus-card p-3 text-[10px] font-mono space-y-0.5 text-muted-foreground bg-accent/50 border border-border rounded-lg max-w-md">
             <div><span className="text-foreground font-semibold">source_type:</span> {video?.source_type ?? "null"}</div>
             <div><span className="text-foreground font-semibold">player:</span> {isUsingEmbed ? "🌐 embed externo (YouTube)" : "📁 mídia interna (storage)"}</div>
+            <div><span className="text-foreground font-semibold">transcript_source:</span> <span className={transcript?.full_text && transcript.full_text.length > 200 ? "text-primary" : "text-destructive"}>{transcript?.full_text && transcript.full_text.length > 200 ? "🎙️ real_audio (ElevenLabs)" : "⚠️ fallback ou ausente"}</span></div>
+            <div><span className="text-foreground font-semibold">clip_detection:</span> {clips && clips.length > 0 ? `✅ ${clips.length} clips (${(clips[0] as any)?.virality_details?.transcript_source || "unknown"})` : "⏳ nenhum"}</div>
+            <div><span className="text-foreground font-semibold">export_mode:</span> {isUsingEmbed ? "⚠️ embed (sem render)" : "✅ rendered (canvas)"}</div>
             <div><span className="text-foreground font-semibold">clip selecionado:</span> {editorState.title || "nenhum"}</div>
             <div><span className="text-foreground font-semibold">start_time:</span> {editorState.startTime}s</div>
             <div><span className="text-foreground font-semibold">end_time:</span> {editorState.endTime}s</div>
@@ -662,7 +665,7 @@ const DashboardEditor = () => {
             {/* Main tools */}
             <div className="venus-card p-4 flex-1">
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-3">Ferramentas</h3>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 <button
                   className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                   onClick={handleCreateClip}
@@ -678,54 +681,7 @@ const DashboardEditor = () => {
                   <Copy size={14} strokeWidth={1.5} />
                   <span className="text-[9px]">Duplicar</span>
                 </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <ZoomIn size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Zoom</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Smile size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Emojis</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Image size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Logo</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Layout size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Template</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Type size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Título</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Crop size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Reframe</span>
-                </button>
+                {/* Disabled tools hidden — will be shown when implemented */}
               </div>
             </div>
 
