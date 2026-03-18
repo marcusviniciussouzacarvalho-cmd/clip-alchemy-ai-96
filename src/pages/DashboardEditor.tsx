@@ -681,54 +681,7 @@ const DashboardEditor = () => {
                   <Copy size={14} strokeWidth={1.5} />
                   <span className="text-[9px]">Duplicar</span>
                 </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <ZoomIn size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Zoom</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Smile size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Emojis</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Image size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Logo</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Layout size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Template</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Type size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Título</span>
-                </button>
-                <button
-                  className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground opacity-50 cursor-not-allowed"
-                  title="Em breve"
-                  disabled
-                >
-                  <Crop size={14} strokeWidth={1.5} />
-                  <span className="text-[9px]">Reframe</span>
-                </button>
+                {/* Disabled tools hidden — will be shown when implemented */}
               </div>
             </div>
 
