@@ -90,8 +90,6 @@ const DashboardEditor = () => {
   // Initialize editor state from video
   useEffect(() => {
     if (!video) return;
-    const mediaMode = video.source_type === "youtube" && !video.file_path ? "embed externo" : "internal media";
-    console.log(`[PATCH V3] using ${mediaMode}`, { source_type: video.source_type, file_path: video.file_path });
 
     const initial: EditorState = {
       startTime: 0,
