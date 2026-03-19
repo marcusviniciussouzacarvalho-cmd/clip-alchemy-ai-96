@@ -334,7 +334,6 @@ const DashboardEditor = () => {
         title: `${editorState.title || video.title} (cópia)`,
         start_time: editorState.startTime,
         end_time: editorState.endTime,
-        duration_seconds: editorState.endTime - editorState.startTime,
         format: editorState.format,
         status: "manual",
         virality_score: 0,
