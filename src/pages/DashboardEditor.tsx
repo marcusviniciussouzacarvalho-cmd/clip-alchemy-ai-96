@@ -41,9 +41,6 @@ const QUICK_SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/editor-chat`;
 
 const DashboardEditor = () => {
-  useEffect(() => {
-    console.log("[PATCH V3] DashboardEditor loaded — IA REAL mode");
-  }, []);
 
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get("video") || undefined;
