@@ -454,7 +454,7 @@ const DashboardEditor = () => {
     );
   }
 
-  const isUsingEmbed = video?.source_type === "youtube" && !video?.file_path;
+  const showYouTubeNote = video?.source_type === "youtube" && !video?.file_path;
 
   return (
     <DashboardLayout>
