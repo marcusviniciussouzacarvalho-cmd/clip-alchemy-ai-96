@@ -293,7 +293,6 @@ const DashboardEditor = () => {
         title: clipTitle,
         start_time: editorState.startTime,
         end_time: editorState.endTime,
-        duration_seconds: duration,
         format: editorState.format,
         status: "manual",
         virality_score: 0,
