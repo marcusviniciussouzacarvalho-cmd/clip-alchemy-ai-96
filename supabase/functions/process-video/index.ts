@@ -31,7 +31,7 @@ async function callAI(prompt: string, systemPrompt: string): Promise<string> {
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
-      temperature: 0.4,
+      temperature: 0.3,
     }),
   });
 
@@ -69,7 +69,6 @@ async function updateJob(supabase: any, jobId: string, videoId: string, status: 
 }
 
 function generateSegmentsFromWords(transcriptId: string, words: any[]): any[] {
-  // Group words into segments of ~8-12 words for natural sentence-like chunks
   const segments: any[] = [];
   let currentWords: any[] = [];
   let segStart = 0;
@@ -80,7 +79,6 @@ function generateSegmentsFromWords(transcriptId: string, words: any[]): any[] {
     }
     currentWords.push(word);
 
-    // Split on sentence-ending punctuation or after ~10 words
     const text = word.text || "";
     const isSentenceEnd = /[.!?]$/.test(text);
     const isLongEnough = currentWords.length >= 10;
@@ -98,7 +96,6 @@ function generateSegmentsFromWords(transcriptId: string, words: any[]): any[] {
     }
   }
 
-  // Flush remaining words
   if (currentWords.length > 0) {
     const lastWord = currentWords[currentWords.length - 1];
     segments.push({
@@ -164,6 +161,7 @@ async function transcribeWithElevenLabs(supabase: any, video: any): Promise<{ te
     throw new Error("NO_FILE_PATH");
   }
 
+  // Check file size first — ElevenLabs has limits and edge functions have timeouts
   console.log("[STT] Downloading video from storage:", video.file_path);
   const { data: fileData, error: downloadError } = await supabase.storage
     .from("videos")
@@ -174,7 +172,16 @@ async function transcribeWithElevenLabs(supabase: any, video: any): Promise<{ te
     throw new Error("DOWNLOAD_FAILED");
   }
 
-  console.log("[STT] File downloaded, size:", fileData.size, "bytes. Sending to ElevenLabs Scribe...");
+  const fileSizeMB = fileData.size / (1024 * 1024);
+  console.log("[STT] File downloaded, size:", fileSizeMB.toFixed(1), "MB");
+
+  // Warn if file is very large (>50MB) — may timeout
+  if (fileSizeMB > 200) {
+    console.warn("[STT] File too large for edge function processing:", fileSizeMB.toFixed(1), "MB");
+    throw new Error("FILE_TOO_LARGE");
+  }
+
+  console.log("[STT] Sending to ElevenLabs Scribe v2...");
 
   const formData = new FormData();
   const fileName = video.file_path.split("/").pop() || "video.mp4";
@@ -184,70 +191,144 @@ async function transcribeWithElevenLabs(supabase: any, video: any): Promise<{ te
   formData.append("diarize", "true");
   formData.append("language_code", video.language === "pt" ? "por" : video.language === "en" ? "eng" : "por");
 
-  const sttResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-    method: "POST",
-    headers: { "xi-api-key": ELEVENLABS_API_KEY },
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
 
-  if (!sttResponse.ok) {
-    const errText = await sttResponse.text();
-    console.error("[STT] ElevenLabs error:", sttResponse.status, errText);
-    throw new Error(`STT_API_ERROR_${sttResponse.status}`);
+  try {
+    const sttResponse = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+      method: "POST",
+      headers: { "xi-api-key": ELEVENLABS_API_KEY },
+      body: formData,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!sttResponse.ok) {
+      const errText = await sttResponse.text();
+      console.error("[STT] ElevenLabs error:", sttResponse.status, errText);
+      throw new Error(`STT_API_ERROR_${sttResponse.status}`);
+    }
+
+    const transcription = await sttResponse.json();
+    console.log("[STT] ✅ Real transcription received. Text length:", transcription.text?.length, "Words:", transcription.words?.length);
+
+    if (!transcription.text || transcription.text.length < 10) {
+      console.warn("[STT] Transcription too short or empty, treating as failure");
+      throw new Error("STT_EMPTY_RESULT");
+    }
+
+    return {
+      text: transcription.text,
+      words: transcription.words || [],
+      source: "elevenlabs_real_audio",
+    };
+  } catch (err: any) {
+    clearTimeout(timeout);
+    if (err.name === "AbortError") {
+      throw new Error("STT_TIMEOUT");
+    }
+    throw err;
   }
-
-  const transcription = await sttResponse.json();
-  console.log("[STT] ✅ Real transcription received. Text length:", transcription.text?.length, "Words:", transcription.words?.length);
-
-  return {
-    text: transcription.text || "",
-    words: transcription.words || [],
-    source: "elevenlabs_real_audio",
-  };
 }
 
-async function buildTranscript(supabase: any, video: any): Promise<{ text: string; words: any[]; source: string }> {
+async function buildTranscript(supabase: any, video: any, jobId: string, videoId: string): Promise<{ text: string; words: any[]; source: string }> {
   const title = video?.title || "Vídeo";
   const hasFile = !!video?.file_path;
 
   // Try real STT first if we have a file
   if (hasFile) {
     try {
-      return await transcribeWithElevenLabs(supabase, video);
+      const result = await transcribeWithElevenLabs(supabase, video);
+      return result;
     } catch (err: any) {
-      console.warn("[STT] Real transcription failed:", err.message, "— falling back to AI-generated");
+      const reason = err.message || "unknown";
+      console.warn("[STT] Real transcription failed:", reason);
+      
+      // Log the failure clearly
+      await supabase.from("job_logs").insert({
+        job_id: jobId,
+        level: "warn",
+        message: `[STT] Transcrição real falhou: ${reason}. Usando fallback por IA.`,
+        metadata: { error: reason, file_path: video.file_path, file_size: video.file_size },
+      });
+
+      // Update status to show fallback is being used
+      await updateJob(supabase, jobId, videoId, "transcribing", 25, `STT falhou (${reason}). Gerando transcrição por IA...`);
     }
   }
 
-  // AI-generated fallback (clearly marked)
+  // AI-generated fallback — generate based on title/description only
+  // IMPORTANT: clearly mark this as synthetic, NOT real audio content
   const description = video?.description || "";
   const duration = video?.duration_seconds || 180;
 
   try {
     const aiTranscript = await callAI(
-      `Crie uma transcrição plausível em português brasileiro para um vídeo intitulado "${title}". Descrição: "${description}". A duração aproximada é ${duration} segundos. Gere um texto natural, útil para segmentação em clips, com frases curtas e momentos fortes.`,
-      "Você gera uma transcrição plausível para protótipos de clipping quando não há serviço externo de speech-to-text configurado."
+      `Eu preciso de um placeholder de transcrição para um vídeo chamado "${title}".
+Descrição do vídeo: "${description || 'sem descrição'}".
+Duração aproximada: ${duration} segundos.
+
+IMPORTANTE: Este é apenas um PLACEHOLDER porque a transcrição real do áudio falhou.
+Gere um texto curto e genérico que sirva como marcador temporário.
+NÃO invente conteúdo específico — apenas indique que a transcrição real não está disponível.
+Exemplo: "Transcrição automática indisponível para este vídeo. O conteúdo de áudio não pôde ser processado. Tente reprocessar o vídeo ou verifique se o arquivo de áudio está correto."`,
+      "Você gera textos placeholder para quando a transcrição de áudio real não está disponível. Seja breve e honesto."
     );
-    return { text: aiTranscript || title, words: [], source: "ai_generated_fallback" };
+    return { text: aiTranscript || `Transcrição indisponível para "${title}"`, words: [], source: "ai_fallback_placeholder" };
   } catch {
-    return { text: title, words: [], source: "title_only_fallback" };
+    return { text: `Transcrição indisponível para "${title}". Reprocesse o vídeo para tentar novamente.`, words: [], source: "fallback_unavailable" };
   }
 }
 
 async function detectMoments(transcriptText: string, duration: number, title: string, transcriptSource: string) {
-  try {
-    const sourceNote = transcriptSource === "elevenlabs_real_audio"
-      ? "Esta transcrição foi extraída do áudio real do vídeo."
-      : "Esta transcrição foi gerada por IA e pode não ser precisa.";
+  // If transcript is not from real audio, generate basic time-based clips
+  if (transcriptSource !== "elevenlabs_real_audio") {
+    console.log("[MOMENTS] Transcript is not from real audio, generating time-based clips");
+    return generateBasicMoments(duration, title, transcriptSource);
+  }
 
+  try {
     const aiMoments = await callAI(
-      `Analise a transcrição abaixo e devolva entre 4 e 6 melhores momentos para clips curtos.\n\n${sourceNote}\n\nDuração total do vídeo: ${duration} segundos.\n\nTranscrição:\n${transcriptText.slice(0, 5000)}\n\nResponda apenas com JSON array. Cada item deve conter start_seconds, end_seconds, title, reason, score, hook_strength, emotion, pacing, retention e transcript_excerpt.`,
-      "Você identifica trechos de maior retenção para vídeo curto. Base sua análise no conteúdo real da transcrição."
+      `Analise a transcrição REAL abaixo (extraída do áudio do vídeo) e identifique os 4 a 6 MELHORES momentos para clips curtos de redes sociais.
+
+REGRAS OBRIGATÓRIAS:
+1. O título de cada clip DEVE ser uma frase extraída diretamente ou derivada do conteúdo real da transcrição.
+2. NÃO invente títulos genéricos como "Momento Impactante" ou "O Início". Use as palavras reais do falante.
+3. Cada clip deve ter entre 15 e 60 segundos.
+4. O campo "transcript_excerpt" deve conter o texto EXATO daquele trecho da transcrição.
+5. Priorize: ganchos fortes, frases de impacto, mudanças de tom, momentos emocionais, revelações.
+6. Os timestamps (start_seconds, end_seconds) devem corresponder ao conteúdo real.
+
+Duração total do vídeo: ${duration} segundos.
+Título do vídeo: "${title}"
+
+TRANSCRIÇÃO REAL:
+${transcriptText.slice(0, 8000)}
+
+Responda APENAS com um JSON array. Cada item:
+{
+  "start_seconds": number,
+  "end_seconds": number,
+  "title": "frase real ou derivada do conteúdo",
+  "reason": "por que este momento é bom para clip",
+  "score": number (50-99),
+  "hook_strength": number (40-99),
+  "emotion": number (40-99),
+  "pacing": number (40-99),
+  "retention": number (40-99),
+  "transcript_excerpt": "texto exato do trecho"
+}`,
+      `Você é um especialista em conteúdo viral e análise de vídeos para redes sociais.
+Sua tarefa é identificar os melhores momentos de um vídeo baseado na transcrição REAL do áudio.
+Os títulos devem SEMPRE refletir o conteúdo real falado no vídeo.
+NUNCA gere títulos genéricos ou inventados.`
     );
 
     const parsed = parseJSON(aiMoments);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return generateBasicMoments(duration, title, transcriptText);
+      console.warn("[MOMENTS] AI returned invalid response, using basic moments");
+      return generateBasicMoments(duration, title, transcriptSource);
     }
 
     return parsed.map((m: any, index: number) => {
@@ -263,15 +344,16 @@ async function detectMoments(transcriptText: string, duration: number, title: st
         emotion: Math.min(99, Math.max(40, Number(m.emotion) || 60)),
         pacing: Math.min(99, Math.max(40, Number(m.pacing) || 60)),
         retention: Math.min(99, Math.max(40, Number(m.retention) || 65)),
-        transcript_excerpt: m.transcript_excerpt || transcriptText.slice(start, end + 120),
+        transcript_excerpt: m.transcript_excerpt || "",
       };
     });
-  } catch {
-    return generateBasicMoments(duration, title, transcriptText);
+  } catch (err: any) {
+    console.error("[MOMENTS] AI detection failed:", err.message);
+    return generateBasicMoments(duration, title, transcriptSource);
   }
 }
 
-function generateBasicMoments(duration: number, title: string, transcriptText: string) {
+function generateBasicMoments(duration: number, title: string, transcriptSource: string) {
   const count = Math.min(5, Math.max(3, Math.floor(duration / 45)));
   const span = Math.max(20, Math.floor(duration / count));
   return Array.from({ length: count }).map((_, i) => {
@@ -280,14 +362,16 @@ function generateBasicMoments(duration: number, title: string, transcriptText: s
     return {
       start_seconds: start,
       end_seconds: end,
-      title: `${title} — clip ${i + 1}`,
-      reason: "Segmentação automática por duração (sem análise de conteúdo).",
-      score: 50 + i * 3,
-      hook_strength: 50,
-      emotion: 50,
-      pacing: 50,
-      retention: 50,
-      transcript_excerpt: transcriptText.slice(i * 120, i * 120 + 160) || `Trecho ${i + 1}`,
+      title: `${title} — parte ${i + 1}`,
+      reason: transcriptSource === "elevenlabs_real_audio"
+        ? "Segmentação automática (análise de IA falhou)."
+        : "Segmentação por tempo (transcrição real indisponível).",
+      score: 40 + i * 3,
+      hook_strength: 40,
+      emotion: 40,
+      pacing: 40,
+      retention: 40,
+      transcript_excerpt: "",
     };
   });
 }
@@ -297,20 +381,20 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
   const duration = Math.max(30, video?.duration_seconds || 180);
 
   await updateJob(supabase, jobId, videoId, "processing", 5, "Validando mídia");
-  const isYouTubeEmbed = video?.source_type === "youtube" && !video?.file_path;
-  if (!video?.file_path && !isYouTubeEmbed) {
-    throw new Error("Vídeo sem arquivo de mídia interno.");
+  
+  if (!video?.file_path) {
+    throw new Error("Vídeo sem arquivo de mídia interno. Faça upload do arquivo primeiro.");
   }
 
-  // STEP: Transcription (real audio or AI fallback)
-  await updateJob(supabase, jobId, videoId, "transcribing", 15, "Transcrevendo áudio real (ElevenLabs)...");
+  // STEP: Transcription
+  await updateJob(supabase, jobId, videoId, "transcribing", 10, "Iniciando transcrição do áudio...");
   
   let transcriptResult: { text: string; words: any[]; source: string };
   
   if (options?.generate_transcript === false) {
     transcriptResult = { text: title, words: [], source: "skipped" };
   } else {
-    transcriptResult = await buildTranscript(supabase, video);
+    transcriptResult = await buildTranscript(supabase, video, jobId, videoId);
   }
 
   const transcriptText = transcriptResult.text;
@@ -356,13 +440,13 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
   }
 
   // STEP: Detect moments
-  await updateJob(supabase, jobId, videoId, "analyzing", 58, "Detectando melhores momentos (baseado na transcrição)");
+  await updateJob(supabase, jobId, videoId, "analyzing", 55, "Detectando melhores momentos...");
   const moments = options?.detect_moments === false
-    ? generateBasicMoments(duration, title, transcriptText)
+    ? generateBasicMoments(duration, title, transcriptSource)
     : await detectMoments(transcriptText, duration, title, transcriptSource);
 
   // STEP: Generate clips
-  await updateJob(supabase, jobId, videoId, "generating_clips", 76, "Gerando clips e legendas");
+  await updateJob(supabase, jobId, videoId, "generating_clips", 75, "Gerando clips e legendas...");
   await supabase.from("clips").delete().eq("video_id", videoId);
 
   const clipsToInsert = moments.map((m: any) => ({
@@ -371,7 +455,7 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
     title: m.title,
     start_time: m.start_seconds,
     end_time: m.end_seconds,
-    // NOTE: duration_seconds is a GENERATED column — do NOT include it
+    // duration_seconds is a GENERATED column — do NOT include
     virality_score: m.score,
     virality_details: {
       hook_strength: m.hook_strength,
@@ -395,7 +479,8 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
   }
   console.log("[CLIPS] ✅ Inserted", clips?.length, "clips successfully");
 
-  if (clips?.length && options?.generate_captions !== false) {
+  // Generate captions for each clip
+  if (clips?.length && options?.generate_captions !== false && transcriptSource === "elevenlabs_real_audio") {
     await supabase.from("captions").delete().in("clip_id", clips.map((c: any) => c.id));
     for (const clip of clips) {
       const captions = generateCaptionsForClip(clip.id, userId, clip.transcript_text || title, clip.start_time, clip.end_time);
@@ -403,6 +488,7 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
     }
   }
 
+  // Deduct credits
   const creditCost = 15 + (clips?.length || 0) * 3;
   const { data: currentCredits } = await supabase.from("credits").select("balance, total_used").eq("user_id", userId).single();
   if (currentCredits) {
@@ -419,12 +505,13 @@ async function processVideoAsync(supabase: any, jobId: string, videoId: string, 
     job_id: jobId,
   });
 
-  await updateJob(supabase, jobId, videoId, "completed", 100, `Concluído (transcrição: ${transcriptSource})`, { completed_at: new Date().toISOString() });
+  const sttLabel = transcriptSource === "elevenlabs_real_audio" ? "transcrição real do áudio" : "transcrição indisponível (placeholder)";
+  await updateJob(supabase, jobId, videoId, "completed", 100, `Concluído (${sttLabel})`, { completed_at: new Date().toISOString() });
 
   await supabase.from("notifications").insert({
     user_id: userId,
     title: "Processamento concluído",
-    message: `"${title}" processado com transcrição ${transcriptSource === "elevenlabs_real_audio" ? "real do áudio" : "gerada por IA"}. ${(clips?.length || 0)} clips gerados!`,
+    message: `"${title}" processado com ${sttLabel}. ${(clips?.length || 0)} clips gerados.`,
     type: "processing",
     related_entity_type: "video",
     related_entity_id: videoId,
@@ -448,90 +535,174 @@ Deno.serve(async (req) => {
 
     if (req.method === "GET") {
       if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Authorization required" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+
       const { data: { user } } = await anonClient.auth.getUser();
       if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Invalid token" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      const url = new URL(req.url);
-      const videoId = url.searchParams.get("video_id");
-      let query = anonClient.from("processing_jobs").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
-      if (videoId) query = query.eq("video_id", videoId);
-      const { data: jobs, error } = await query.limit(20);
-      if (error) throw error;
-      return new Response(JSON.stringify({ jobs }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      const { data: jobs } = await serviceClient
+        .from("processing_jobs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      return new Response(JSON.stringify({ jobs }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (req.method === "POST") {
+      const body = await req.json();
+      const { video_id, options = {} } = body;
+
+      if (!video_id) {
+        return new Response(JSON.stringify({ error: "video_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: { user } } = await anonClient.auth.getUser();
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Not authenticated" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: video } = await serviceClient
+        .from("videos")
+        .select("*")
+        .eq("id", video_id)
+        .single();
+
+      if (!video) {
+        return new Response(JSON.stringify({ error: "Video not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Create job
+      const { data: job, error: jobError } = await serviceClient
+        .from("processing_jobs")
+        .insert({
+          video_id,
+          user_id: user.id,
+          status: "queued",
+          options,
+        })
+        .select()
+        .single();
+
+      if (jobError || !job) {
+        return new Response(JSON.stringify({ error: "Failed to create job" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Process async
+      (async () => {
+        try {
+          await processVideoAsync(serviceClient, job.id, video_id, user.id, video, options);
+        } catch (err: any) {
+          console.error("[PROCESS] Fatal error:", err.message);
+          await updateJob(serviceClient, job.id, video_id, "failed", 0, "Erro fatal", {
+            error_message: err.message,
+          });
+        }
+      })();
+
+      return new Response(JSON.stringify({ ok: true, job_id: job.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (req.method === "PATCH") {
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const body = await req.json();
+      const { job_id } = body;
+
+      if (!job_id) {
+        return new Response(JSON.stringify({ error: "job_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
+
       const { data: { user } } = await anonClient.auth.getUser();
       if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Not authenticated" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      const { job_id } = await req.json();
-      const { data: existingJob } = await anonClient.from("processing_jobs").select("*").eq("id", job_id).eq("user_id", user.id).single();
-      if (!existingJob) {
-        return new Response(JSON.stringify({ error: "Job not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      const { data: job } = await serviceClient
+        .from("processing_jobs")
+        .select("*")
+        .eq("id", job_id)
+        .single();
+
+      if (!job) {
+        return new Response(JSON.stringify({ error: "Job not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      const { data: video } = await serviceClient.from("videos").select("*").eq("id", existingJob.video_id).single();
-      await processVideoAsync(serviceClient, existingJob.id, existingJob.video_id, user.id, video, existingJob.options || {});
-      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
 
-    if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+      const { data: video } = await serviceClient
+        .from("videos")
+        .select("*")
+        .eq("id", job.video_id)
+        .single();
 
-    const body = await req.json();
-    const videoId = body.video_id as string | undefined;
-    const options = body.options || {};
-    let userId = body.user_id as string | undefined;
-    let jobId = body.job_id as string | undefined;
-
-    if (!videoId) {
-      return new Response(JSON.stringify({ error: "video_id is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    if (!userId) {
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const { data: { user } } = await anonClient.auth.getUser();
-      if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      userId = user.id;
-    }
-
-    const { data: video } = await serviceClient.from("videos").select("*").eq("id", videoId).single();
-    if (!video) {
-      return new Response(JSON.stringify({ error: "Video not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    if (!jobId) {
-      const { data: job } = await serviceClient.from("processing_jobs").insert({
-        video_id: videoId,
-        user_id: userId,
+      // Reset job
+      await serviceClient.from("processing_jobs").update({
         status: "queued",
         progress: 0,
-        current_step: "Na fila",
-        options,
-      }).select().single();
-      jobId = job.id;
+        current_step: "Reprocessando...",
+        error_message: null,
+        started_at: new Date().toISOString(),
+        completed_at: null,
+      }).eq("id", job_id);
+
+      // Reprocess async
+      (async () => {
+        try {
+          await processVideoAsync(serviceClient, job_id, job.video_id, user.id, video, job.options || {});
+        } catch (err: any) {
+          console.error("[REPROCESS] Fatal error:", err.message);
+          await updateJob(serviceClient, job_id, job.video_id, "failed", 0, "Erro fatal no reprocessamento", {
+            error_message: err.message,
+          });
+        }
+      })();
+
+      return new Response(JSON.stringify({ ok: true, reprocessing: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    try {
-      await processVideoAsync(serviceClient, jobId, videoId, userId, video, options);
-    } catch (processError: any) {
-      console.error("[PROCESS] Pipeline error:", processError.message);
-      await updateJob(serviceClient, jobId, videoId, "failed", 0, processError.message, { error_message: processError.message });
-      return new Response(JSON.stringify({ ok: false, error: processError.message, job_id: jobId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    return new Response(JSON.stringify({ ok: true, job_id: jobId, video_id: videoId }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err: any) {
+    console.error("[HANDLER] Error:", err.message);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
