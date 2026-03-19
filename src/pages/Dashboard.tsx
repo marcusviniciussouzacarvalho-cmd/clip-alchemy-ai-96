@@ -40,11 +40,12 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="venus-card p-5 group hover:border-foreground/20 transition-colors"
+            className="venus-card-hover p-5 group"
           >
             <div className="flex items-center justify-between mb-3">
-              <s.icon size={16} className="text-muted-foreground" />
-              <TrendingUp size={12} className="text-muted-foreground/40" />
+              <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
+                <s.icon size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
             </div>
             <div className="text-2xl font-extrabold font-display tabular-nums">
               {statsLoading ? <Skeleton className="h-7 w-16" /> : String(s.value)}
