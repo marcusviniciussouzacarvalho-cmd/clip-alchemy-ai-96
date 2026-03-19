@@ -40,11 +40,12 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="venus-card p-5 group hover:border-foreground/20 transition-colors"
+            className="venus-card-hover p-5 group"
           >
             <div className="flex items-center justify-between mb-3">
-              <s.icon size={16} className="text-muted-foreground" />
-              <TrendingUp size={12} className="text-muted-foreground/40" />
+              <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
+                <s.icon size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
             </div>
             <div className="text-2xl font-extrabold font-display tabular-nums">
               {statsLoading ? <Skeleton className="h-7 w-16" /> : String(s.value)}
@@ -163,7 +164,7 @@ const Dashboard = () => {
         ) : (
           <div className="space-y-1">
             {recentJobs.map((job) => (
-              <div key={job.id} className="flex items-center justify-between p-3 rounded-lg venus-card hover:bg-accent/50 transition-colors cursor-pointer">
+              <div key={job.id} className="flex items-center justify-between p-3 rounded-lg venus-card-hover cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
                     <Video size={14} className="text-muted-foreground" />

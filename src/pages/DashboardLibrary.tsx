@@ -101,7 +101,7 @@ const DashboardLibrary = () => {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center justify-between p-3 venus-card hover:bg-accent/50 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 venus-card-hover cursor-pointer"
                   onClick={() => navigate(`/dashboard/videos/${v.id}`)}
                 >
                   <div className="flex items-center gap-3">

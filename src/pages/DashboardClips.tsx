@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ScoreBar = ({ score }: { score: number }) => {
-  const color = score >= 85 ? 'bg-emerald-400' : score >= 70 ? 'bg-amber-400' : 'bg-destructive';
+  const color = score >= 85 ? 'bg-primary' : score >= 70 ? 'bg-muted-foreground' : 'bg-destructive';
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1 rounded-full bg-accent overflow-hidden">
