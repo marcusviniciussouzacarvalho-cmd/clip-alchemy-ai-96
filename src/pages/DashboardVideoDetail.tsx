@@ -126,7 +126,6 @@ const DashboardVideoDetail = () => {
         title: clipTitle.trim(),
         start_time: startSec,
         end_time: endSec,
-        duration_seconds: endSec - startSec,
         format: "9:16",
         status: "manual",
         virality_score: 0,

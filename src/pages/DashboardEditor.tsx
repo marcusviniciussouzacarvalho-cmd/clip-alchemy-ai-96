@@ -463,13 +463,6 @@ const DashboardEditor = () => {
 
   return (
     <DashboardLayout>
-      {/* PATCH V3 Badge */}
-      <div className="mb-3 flex items-center gap-2">
-        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-xs px-3 py-1">
-          PATCH V3 IA REAL
-        </Badge>
-      </div>
-
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -478,19 +471,11 @@ const DashboardEditor = () => {
             </Link>
           </div>
           <h1 className="text-2xl font-extrabold mb-1">Editor de Clip</h1>
-          <p className="text-sm text-muted-foreground truncate max-w-md">{video?.title || "Editando"}</p>
-
-          {/* Diagnostic block V3 */}
-          <div className="mt-2 venus-card p-3 text-[10px] font-mono space-y-0.5 text-muted-foreground bg-accent/50 border border-border rounded-lg max-w-md">
-            <div><span className="text-foreground font-semibold">source_type:</span> {video?.source_type ?? "null"}</div>
-            <div><span className="text-foreground font-semibold">player:</span> {isUsingEmbed ? "🌐 embed externo (YouTube)" : "📁 mídia interna (storage)"}</div>
-            <div><span className="text-foreground font-semibold">transcript_source:</span> <span className={transcript?.full_text && transcript.full_text.length > 200 ? "text-primary" : "text-destructive"}>{transcript?.full_text && transcript.full_text.length > 200 ? "🎙️ real_audio (ElevenLabs)" : "⚠️ fallback ou ausente"}</span></div>
-            <div><span className="text-foreground font-semibold">clip_detection:</span> {clips && clips.length > 0 ? `✅ ${clips.length} clips (${(clips[0] as any)?.virality_details?.transcript_source || "unknown"})` : "⏳ nenhum"}</div>
-            <div><span className="text-foreground font-semibold">export_mode:</span> {isUsingEmbed ? "⚠️ embed (sem render)" : "✅ rendered (canvas)"}</div>
-            <div><span className="text-foreground font-semibold">clip selecionado:</span> {editorState.title || "nenhum"}</div>
-            <div><span className="text-foreground font-semibold">start_time:</span> {editorState.startTime}s</div>
-            <div><span className="text-foreground font-semibold">end_time:</span> {editorState.endTime}s</div>
-            <div><span className="text-foreground font-semibold">editor_session:</span> {sessionLoaded ? (lastSaved ? `✅ salva em ${lastSaved.toLocaleTimeString()}` : "✅ carregada (sem save prévio)") : "⏳ carregando..."}</div>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted-foreground truncate max-w-md">{video?.title || "Editando"}</p>
+            {clips && clips.length > 0 && (
+              <Badge variant="outline" className="text-[10px]">{clips.length} clips</Badge>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
