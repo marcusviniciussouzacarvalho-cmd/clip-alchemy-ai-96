@@ -85,6 +85,17 @@
     @apply border border-border hover:border-foreground/20 transition-colors;
   }
   .venus-card {
-    @apply bg-card border border-border rounded-xl;
+    @apply bg-card border border-border rounded-xl transition-colors;
   }
+  .venus-card-hover {
+    @apply bg-card border border-border rounded-xl transition-all hover:border-foreground/15 hover:shadow-lg hover:shadow-background/50;
+  }
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }

@@ -164,7 +164,7 @@ const Dashboard = () => {
         ) : (
           <div className="space-y-1">
             {recentJobs.map((job) => (
-              <div key={job.id} className="flex items-center justify-between p-3 rounded-lg venus-card hover:bg-accent/50 transition-colors cursor-pointer">
+              <div key={job.id} className="flex items-center justify-between p-3 rounded-lg venus-card-hover cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
                     <Video size={14} className="text-muted-foreground" />
