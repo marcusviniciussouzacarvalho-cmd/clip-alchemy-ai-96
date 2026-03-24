@@ -126,7 +126,7 @@ const DashboardLibrary = () => {
                       </div>
                     </div>
                   </div>
-                  <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
+                  <span className={statusInfo.badgeClass}>
                     {statusInfo.label}
                   </Badge>
                 </motion.div>
