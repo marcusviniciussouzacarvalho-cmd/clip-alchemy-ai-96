@@ -41,7 +41,7 @@ export function formatDuration(seconds: number | null | undefined): string {
 
 export function getVideoStatusInfo(status: string | null): {
   label: string;
-  color: string;
+  badgeClass: string;
   canProcess: boolean;
   canPlay: boolean;
 } {
@@ -49,21 +49,21 @@ export function getVideoStatusInfo(status: string | null): {
     case "ready":
     case "completed":
     case "clips_ready":
-      return { label: "Pronto", color: "bg-foreground text-background", canProcess: false, canPlay: true };
+      return { label: "Pronto", badgeClass: "venus-badge-success", canProcess: false, canPlay: true };
     case "processing":
     case "transcribing":
     case "analyzing":
     case "generating_clips":
     case "rendering":
     case "queued":
-      return { label: "Processando", color: "bg-accent text-muted-foreground animate-pulse", canProcess: false, canPlay: true };
+      return { label: "Processando", badgeClass: "venus-badge-neutral animate-pulse-subtle", canProcess: false, canPlay: true };
     case "failed":
     case "error":
-      return { label: "Erro", color: "bg-destructive/20 text-destructive-foreground", canProcess: true, canPlay: false };
+      return { label: "Erro", badgeClass: "venus-badge-error", canProcess: true, canPlay: false };
     case "uploaded":
     case "draft":
-      return { label: "Enviado", color: "bg-accent text-muted-foreground", canProcess: true, canPlay: true };
+      return { label: "Enviado", badgeClass: "venus-badge-warning", canProcess: true, canPlay: true };
     default:
-      return { label: status || "Desconhecido", color: "bg-accent text-muted-foreground", canProcess: true, canPlay: false };
+      return { label: status || "Desconhecido", badgeClass: "venus-badge-neutral", canProcess: true, canPlay: false };
   }
 }

@@ -32,7 +32,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: isAdmin } = useIsAdmin();
 
-  // Activate realtime subscriptions
   useRealtimeJobs();
   useRealtimeNotifications();
   useRealtimeClipsAndVideos();
@@ -43,7 +42,6 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     navigate("/");
   };
 
-  // Breadcrumb
   const pathSegments = location.pathname.split("/").filter(Boolean);
   const breadcrumbLabels: Record<string, string> = {
     dashboard: "Dashboard",
@@ -69,10 +67,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-[220px] border-r border-border bg-sidebar fixed inset-y-0 left-0 z-30">
+      <aside className="hidden md:flex flex-col w-[220px] border-r border-sidebar-border bg-sidebar fixed inset-y-0 left-0 z-30">
         <div className="p-5 pb-6">
           <Link to="/" className="font-display text-base font-extrabold tracking-tight text-foreground">
-            VENUS<span className="text-muted-foreground">CLIP</span>
+            VENUS<span className="text-muted-foreground/60">CLIP</span>
           </Link>
         </div>
 
@@ -83,38 +81,38 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
                   active
-                    ? "bg-foreground text-background font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                    ? "bg-foreground text-background font-semibold shadow-sm"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                 }`}
               >
-                <item.icon size={16} strokeWidth={active ? 2.5 : 1.5} />
+                <item.icon size={15} strokeWidth={active ? 2.5 : 1.5} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-border px-3 py-3 space-y-0.5">
+        <div className="border-t border-sidebar-border px-3 py-3 space-y-0.5">
           {isAdmin && (
             <Link
               to="/dashboard/admin"
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
                 location.pathname.startsWith("/dashboard/admin")
                   ? "bg-foreground text-background font-semibold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
               }`}
             >
-              <Shield size={16} strokeWidth={1.5} />
+              <Shield size={15} strokeWidth={1.5} />
               Admin
             </Link>
           )}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-150"
           >
-            <LogOut size={16} strokeWidth={1.5} />
+            <LogOut size={15} strokeWidth={1.5} />
             Sair
           </button>
         </div>
@@ -125,7 +123,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Top bar mobile */}
         <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-sidebar sticky top-0 z-20">
           <Link to="/" className="font-display text-base font-extrabold">
-            VENUS<span className="text-muted-foreground">CLIP</span>
+            VENUS<span className="text-muted-foreground/60">CLIP</span>
           </Link>
           <div className="flex items-center gap-1">
             <NotificationBell />
@@ -137,7 +135,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden border-b border-border bg-sidebar p-3 space-y-0.5">
+          <div className="md:hidden border-b border-border bg-sidebar p-3 space-y-0.5 animate-fade-in">
             {navItems.map((item) => {
               const active = location.pathname === item.href;
               return (
@@ -169,7 +167,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             {pathSegments.map((seg, i) => (
               <span key={seg} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight size={12} />}
+                {i > 0 && <ChevronRight size={11} className="text-muted-foreground/40" />}
                 <span className={i === pathSegments.length - 1 ? "text-foreground font-medium" : ""}>
                   {breadcrumbLabels[seg] || seg}
                 </span>
