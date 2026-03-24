@@ -9,7 +9,7 @@
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 10%;
+    --card: 0 0% 7%;
     --card-foreground: 0 0% 100%;
 
     --popover: 0 0% 8%;
@@ -21,40 +21,45 @@
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 0 0% 12%;
+    --accent: 0 0% 10%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 12%;
+    --border: 0 0% 12%;
+    --input: 0 0% 10%;
     --ring: 0 0% 100%;
 
     --radius: 0.75rem;
 
-    --surface: 0 0% 6%;
+    --surface: 0 0% 5%;
     --surface-foreground: 0 0% 90%;
-    --surface-hover: 0 0% 12%;
+    --surface-hover: 0 0% 10%;
 
     --venus-black: 0 0% 0%;
     --venus-white: 0 0% 100%;
-    --venus-dark: 0 0% 10%;
+    --venus-dark: 0 0% 8%;
     --venus-mid: 0 0% 33%;
-    --venus-light: 0 0% 15%;
-    --venus-ghost: 0 0% 6%;
+    --venus-light: 0 0% 14%;
+    --venus-ghost: 0 0% 4%;
 
-    --sidebar-background: 0 0% 4%;
-    --sidebar-foreground: 0 0% 90%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 12%;
+    --sidebar-border: 0 0% 10%;
     --sidebar-ring: 0 0% 100%;
+
+    --success: 142 72% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
   }
 }
 
@@ -85,17 +90,66 @@
     @apply border border-border hover:border-foreground/20 transition-colors;
   }
   .venus-card {
-    @apply bg-card border border-border rounded-xl transition-colors;
+    @apply bg-card border border-border rounded-xl transition-all duration-200;
   }
   .venus-card-hover {
-    @apply bg-card border border-border rounded-xl transition-all hover:border-foreground/15 hover:shadow-lg hover:shadow-background/50;
+    @apply bg-card border border-border rounded-xl transition-all duration-200 hover:border-foreground/12 hover:bg-card/80;
+    &:hover {
+      box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.5);
+    }
+  }
+  .venus-section-title {
+    @apply text-[11px] font-bold uppercase tracking-widest text-muted-foreground;
+  }
+  .venus-badge {
+    @apply text-[10px] font-semibold px-2 py-0.5 rounded-full;
+  }
+  .venus-badge-success {
+    @apply venus-badge bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))];
+  }
+  .venus-badge-warning {
+    @apply venus-badge bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))];
+  }
+  .venus-badge-error {
+    @apply venus-badge bg-destructive/30 text-destructive-foreground;
+  }
+  .venus-badge-neutral {
+    @apply venus-badge bg-muted text-muted-foreground;
+  }
+  .venus-badge-active {
+    @apply venus-badge bg-foreground text-background;
   }
   .animate-pulse-subtle {
     animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .animate-gradient-x {
+    animation: gradient-x 3s ease infinite;
+    background-size: 200% 200%;
   }
 }
 
 @keyframes pulse-subtle {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 20%);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(0 0% 30%);
 }
