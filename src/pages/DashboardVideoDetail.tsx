@@ -351,7 +351,7 @@ const DashboardVideoDetail = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                <span className={statusInfo.badgeClass}>{statusInfo.label}</span>
               </div>
               {video.current_step && video.status === "processing" && (
                 <div className="flex justify-between">

@@ -115,9 +115,7 @@ const AdminVideos = () => {
                         </td>
                         <td className="p-3 text-center tabular-nums">{formatDuration(v.duration_seconds)}</td>
                         <td className="p-3 text-center">
-                          <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
-                            {statusInfo.label}
-                          </Badge>
+                          <span className={statusInfo.badgeClass}>{statusInfo.label}</span>
                         </td>
                         <td className="p-3 text-center tabular-nums">{v.progress || 0}%</td>
                         <td className="p-3 text-muted-foreground">

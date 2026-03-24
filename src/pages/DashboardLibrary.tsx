@@ -128,7 +128,7 @@ const DashboardLibrary = () => {
                   </div>
                   <span className={statusInfo.badgeClass}>
                     {statusInfo.label}
-                  </Badge>
+                  </span>
                 </motion.div>
               );
             })}
