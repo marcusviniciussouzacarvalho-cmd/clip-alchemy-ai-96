@@ -93,10 +93,12 @@
     @apply bg-card border border-border rounded-xl transition-all duration-200;
   }
   .venus-card-hover {
-    @apply bg-card border border-border rounded-xl transition-all duration-200 hover:border-foreground/12 hover:bg-card/80;
-    &:hover {
-      box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.5);
-    }
+    @apply bg-card border border-border rounded-xl transition-all duration-200;
+  }
+  .venus-card-hover:hover {
+    border-color: hsl(0 0% 100% / 0.12);
+    background-color: hsl(0 0% 7% / 0.8);
+    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.5);
   }
   .venus-section-title {
     @apply text-[11px] font-bold uppercase tracking-widest text-muted-foreground;
