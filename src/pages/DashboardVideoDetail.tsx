@@ -181,9 +181,7 @@ const DashboardVideoDetail = () => {
           <div>
             <h1 className="text-2xl font-extrabold mb-1">{video.title}</h1>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
-                {statusInfo.label}
-              </Badge>
+              <span className={statusInfo.badgeClass}>{statusInfo.label}</span>
               {video.source_type === "youtube" && (
                 <span className="flex items-center gap-1 text-xs"><ExternalLink size={10} /> YouTube</span>
               )}
