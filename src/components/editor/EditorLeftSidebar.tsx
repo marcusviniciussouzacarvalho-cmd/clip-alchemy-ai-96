@@ -1,8 +1,7 @@
 import {
   Scissors, Timer, Crop, RotateCw, Layers, Sparkles, SlidersHorizontal,
-  Eraser, Subtitles, Wand2, Type, Copy, Trash2, MousePointer,
+  Eraser, Subtitles, Wand2, Type, MousePointer,
 } from "lucide-react";
-import type { EditorState } from "./types";
 
 interface Tool {
   id: string;
@@ -15,16 +14,16 @@ interface Tool {
 const TOOLS: Tool[] = [
   { id: "select", label: "Selecionar", icon: MousePointer, available: true },
   { id: "cut", label: "Cortar", icon: Scissors, available: true, action: "cut" },
-  { id: "speed", label: "Velocidade", icon: Timer, available: false },
-  { id: "crop", label: "Crop", icon: Crop, available: false },
-  { id: "rotate", label: "Rotação", icon: RotateCw, available: false },
-  { id: "transitions", label: "Transições", icon: Layers, available: false },
-  { id: "effects", label: "Efeitos", icon: Sparkles, available: false },
-  { id: "lut", label: "Filtros LUT", icon: SlidersHorizontal, available: false },
-  { id: "removebg", label: "Remove Fundo", icon: Eraser, available: false },
+  { id: "speed", label: "Velocidade", icon: Timer, available: true, action: "speed" },
+  { id: "crop", label: "Crop", icon: Crop, available: true, action: "crop" },
+  { id: "rotate", label: "Rotação", icon: RotateCw, available: true, action: "rotate" },
+  { id: "transitions", label: "Transições", icon: Layers, available: true, action: "transitions" },
+  { id: "effects", label: "Efeitos", icon: Sparkles, available: true, action: "effects" },
+  { id: "lut", label: "Filtros LUT", icon: SlidersHorizontal, available: true, action: "lut" },
+  { id: "removebg", label: "Remove Fundo", icon: Eraser, available: true, action: "removebg" },
   { id: "captions", label: "Legendas", icon: Subtitles, available: true, action: "captions" },
   { id: "text", label: "Texto", icon: Type, available: true, action: "text" },
-  { id: "upscale", label: "Upscale IA", icon: Wand2, available: false },
+  { id: "upscale", label: "Upscale IA", icon: Wand2, available: true, action: "upscale" },
 ];
 
 interface EditorLeftSidebarProps {
@@ -46,7 +45,7 @@ export default function EditorLeftSidebar({ activeTool, onSelectTool, onAction }
               onSelectTool(tool.id);
             }}
             disabled={!tool.available}
-            title={tool.label + (!tool.available ? " (em breve)" : "")}
+            title={tool.label}
             className={`
               relative w-11 h-11 flex flex-col items-center justify-center rounded-lg transition-all text-[8px] gap-0.5
               ${isActive
@@ -59,9 +58,6 @@ export default function EditorLeftSidebar({ activeTool, onSelectTool, onAction }
           >
             <tool.icon size={16} />
             <span className="leading-none truncate w-full text-center">{tool.label}</span>
-            {!tool.available && (
-              <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-warning/60" />
-            )}
           </button>
         );
       })}
