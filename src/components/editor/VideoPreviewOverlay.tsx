@@ -90,7 +90,7 @@ export default function VideoPreviewOverlay({
   return (
     <>
       {/* Transform/filter overlay applied to video container */}
-      {(hasTransform || hasColor) && (
+      {(hasTransform || hasColor || hasCrop || hasEffect) && (
         <div
           className="absolute inset-0 pointer-events-none z-[5]"
           style={{
