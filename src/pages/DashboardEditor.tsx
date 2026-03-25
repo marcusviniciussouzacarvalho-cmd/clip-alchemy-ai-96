@@ -344,7 +344,7 @@ const DashboardEditor = () => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Preview area */}
           <div className="flex-1 bg-[hsl(0_0%_4%)] flex items-center justify-center p-4 min-h-0 relative">
-            <div ref={previewContainerRef} className="relative max-w-full max-h-full" style={{
+            <div ref={previewContainerRef} className="relative max-w-full max-h-full editor-video-transform" style={{
               aspectRatio: editorState.format === "9:16" ? "9/16" : editorState.format === "1:1" ? "1/1" : "16/9",
               maxHeight: "100%",
               width: "auto",
