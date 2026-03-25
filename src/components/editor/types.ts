@@ -48,6 +48,13 @@ export interface ColorCorrection {
   temperature: number;  // -100 to 100
 }
 
+export interface CropValues {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
 export const DEFAULT_TRANSFORM: VideoTransform = {
   x: 0, y: 0, scale: 100, rotation: 0, opacity: 100,
 };
@@ -69,6 +76,24 @@ export interface EditorState {
   selectedTrack: "video" | "captions" | "text" | null;
   videoTransform: VideoTransform;
   colorCorrection: ColorCorrection;
+  // Speed
+  speed?: number; // percentage, 100 = normal
+  // Crop
+  crop?: CropValues;
+  // Transition
+  transition?: string;
+  transitionDuration?: number;
+  // Effects
+  effect?: string;
+  effectIntensity?: number;
+  // LUT preset name
+  lutPreset?: string;
+  // Remove background
+  removeBg?: boolean;
+  bgReplacementColor?: string;
+  // Upscale
+  upscale?: string;
+  upscaleDenoise?: boolean;
 }
 
 export const DEFAULT_CAPTION_STYLE: CaptionStyle = {
@@ -102,6 +127,17 @@ export function createDefaultEditorState(videoTitle: string, duration: number): 
     selectedTrack: null,
     videoTransform: { ...DEFAULT_TRANSFORM },
     colorCorrection: { ...DEFAULT_COLOR },
+    speed: 100,
+    crop: { left: 0, right: 0, top: 0, bottom: 0 },
+    transition: "nenhuma",
+    transitionDuration: 500,
+    effect: "none",
+    effectIntensity: 50,
+    lutPreset: "none",
+    removeBg: false,
+    bgReplacementColor: "transparent",
+    upscale: "none",
+    upscaleDenoise: false,
   };
 }
 
