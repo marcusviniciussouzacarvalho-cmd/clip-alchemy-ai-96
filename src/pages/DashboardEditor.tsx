@@ -202,9 +202,7 @@ const DashboardEditor = () => {
 
   // Tool actions
   const handleToolAction = (action: string) => {
-    if (action === "captions") setActiveTool("captions");
-    else if (action === "text") setActiveTool("text");
-    else if (action === "cut") setActiveTool("cut");
+    setActiveTool(action);
   };
 
   // AI Chat

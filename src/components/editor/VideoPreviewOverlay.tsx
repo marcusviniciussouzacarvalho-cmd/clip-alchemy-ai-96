@@ -103,8 +103,9 @@ export default function VideoPreviewOverlay({
             .editor-video-transform iframe {
               transform: ${hasTransform ? buildTransformStyle(vt) : "none"} !important;
               opacity: ${vt.opacity / 100} !important;
-              filter: ${hasColor ? buildFilterStyle(cc) : "none"} !important;
-              transition: transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+              filter: ${hasColor || effectFilter ? `${hasColor ? buildFilterStyle(cc) : ""}${effectFilter}`.trim() || "none" : "none"} !important;
+              clip-path: ${cropClip} !important;
+              transition: transform 0.15s ease, opacity 0.15s ease, filter 0.15s ease, clip-path 0.15s ease;
             }
           `}</style>
         </div>
