@@ -100,6 +100,8 @@ export function createDefaultEditorState(videoTitle: string, duration: number): 
     textOverlays: [],
     selectedElementId: null,
     selectedTrack: null,
+    videoTransform: { ...DEFAULT_TRANSFORM },
+    colorCorrection: { ...DEFAULT_COLOR },
   };
 }
 
