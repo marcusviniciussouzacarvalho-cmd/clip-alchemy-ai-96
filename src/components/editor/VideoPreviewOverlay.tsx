@@ -1,4 +1,4 @@
-import type { EditorState } from "./types";
+import type { EditorState, CropValues } from "./types";
 
 interface VideoPreviewOverlayProps {
   editorState: EditorState;
