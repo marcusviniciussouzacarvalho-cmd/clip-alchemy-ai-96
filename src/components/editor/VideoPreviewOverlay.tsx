@@ -51,8 +51,11 @@ export default function VideoPreviewOverlay({
   // Video transform layer — sits behind captions/text but applies to the video via an overlay
   const vt = editorState.videoTransform;
   const cc = editorState.colorCorrection;
+  const crop = editorState.crop;
+  const hasCrop = crop && (crop.left > 0 || crop.right > 0 || crop.top > 0 || crop.bottom > 0);
   const hasTransform = vt.x !== 0 || vt.y !== 0 || vt.scale !== 100 || vt.rotation !== 0 || vt.opacity !== 100;
   const hasColor = cc.brightness !== 0 || cc.contrast !== 0 || cc.saturation !== 0 || cc.temperature !== 0;
+  const hasEffect = editorState.effect && editorState.effect !== "none";
 
   // Apply transforms to the parent video element via a transparent overlay that controls CSS
   // We use a useEffect approach via style injection on the sibling video element
