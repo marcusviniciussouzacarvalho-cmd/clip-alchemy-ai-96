@@ -33,6 +33,29 @@ export interface CaptionStyle {
   fontFamily: string;
 }
 
+export interface VideoTransform {
+  x: number;       // -100 to 100
+  y: number;       // -100 to 100
+  scale: number;   // 10 to 200 (percentage)
+  rotation: number; // -180 to 180
+  opacity: number;  // 0 to 100
+}
+
+export interface ColorCorrection {
+  brightness: number;   // -100 to 100
+  contrast: number;     // -100 to 100
+  saturation: number;   // -100 to 100
+  temperature: number;  // -100 to 100
+}
+
+export const DEFAULT_TRANSFORM: VideoTransform = {
+  x: 0, y: 0, scale: 100, rotation: 0, opacity: 100,
+};
+
+export const DEFAULT_COLOR: ColorCorrection = {
+  brightness: 0, contrast: 0, saturation: 0, temperature: 0,
+};
+
 export interface EditorState {
   startTime: number;
   endTime: number;
@@ -44,6 +67,8 @@ export interface EditorState {
   textOverlays: TextOverlay[];
   selectedElementId: string | null;
   selectedTrack: "video" | "captions" | "text" | null;
+  videoTransform: VideoTransform;
+  colorCorrection: ColorCorrection;
 }
 
 export const DEFAULT_CAPTION_STYLE: CaptionStyle = {
