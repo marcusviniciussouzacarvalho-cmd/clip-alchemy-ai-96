@@ -70,7 +70,22 @@ export default function VideoPreviewOverlay({
     videoStyle.filter = buildFilterStyle(cc);
   }
 
-  if (activeCaptions.length === 0 && activeOverlays.length === 0 && !hasTransform && !hasColor) return null;
+  // Build effect filter additions
+  let effectFilter = "";
+  if (hasEffect) {
+    const intensity = (editorState.effectIntensity ?? 50) / 100;
+    switch (editorState.effect) {
+      case "blur": effectFilter = ` blur(${intensity * 8}px)`; break;
+      case "vignette": effectFilter = ""; break; // handled via overlay
+      case "grain": effectFilter = ""; break; // handled via overlay
+      case "glitch": effectFilter = ` hue-rotate(${intensity * 90}deg)`; break;
+      case "zoom-pulse": effectFilter = ""; break;
+    }
+  }
+
+  const cropClip = hasCrop ? `inset(${crop!.top}% ${crop!.right}% ${crop!.bottom}% ${crop!.left}%)` : "none";
+
+  if (activeCaptions.length === 0 && activeOverlays.length === 0 && !hasTransform && !hasColor && !hasCrop && !hasEffect) return null;
 
   return (
     <>
